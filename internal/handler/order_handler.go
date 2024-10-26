@@ -65,11 +65,13 @@ func (h *OrderHandler) GetOrders(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		h.logger.Error("Can not read order data from server", "error", err, "method", r.Method, "url", r.URL)
 		ErrorHandler.Error(w, "Can not read order data from server", http.StatusInternalServerError)
+		return
 	}
 	jsonData, err := json.MarshalIndent(Orders, "", "    ")
 	if err != nil {
 		h.logger.Error("Can not convert order data to json", "error", err, "method", r.Method, "url", r.URL)
 		ErrorHandler.Error(w, "Can not convert order data to json", http.StatusInternalServerError)
+		return
 	}
 	h.logger.Info("Request handled successfully.", "method", r.Method, "url", r.URL)
 	w.Header().Set("Content-Type", "application/json")
@@ -83,6 +85,7 @@ func (h *OrderHandler) GetOrder(w http.ResponseWriter, r *http.Request) {
 		if err.Error() == "the order with given ID soes not exist" {
 			h.logger.Error(err.Error(), "error", err, "method", r.Method, "url", r.URL)
 			ErrorHandler.Error(w, err.Error(), http.StatusNotFound)
+			return
 		} else {
 			h.logger.Error(err.Error(), "error", err, "method", r.Method, "url", r.URL)
 			ErrorHandler.Error(w, err.Error(), http.StatusInternalServerError)
