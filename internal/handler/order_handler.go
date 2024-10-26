@@ -80,9 +80,14 @@ func (h *OrderHandler) GetOrders(w http.ResponseWriter, r *http.Request) {
 func (h *OrderHandler) GetOrder(w http.ResponseWriter, r *http.Request) {
 	RequestedOrder, err := h.orderService.GetOrder(r.PathValue("id"))
 	if err != nil {
-		h.logger.Error(err.Error(), "error", err, "method", r.Method, "url", r.URL)
-		ErrorHandler.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		if err.Error() == "the order with given ID soes not exist" {
+			h.logger.Error(err.Error(), "error", err, "method", r.Method, "url", r.URL)
+			ErrorHandler.Error(w, err.Error(), http.StatusNotFound)
+		} else {
+			h.logger.Error(err.Error(), "error", err, "method", r.Method, "url", r.URL)
+			ErrorHandler.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 	}
 	jsonData, err := json.MarshalIndent(RequestedOrder, "", "    ")
 	if err != nil {
