@@ -18,7 +18,7 @@ import (
 )
 
 const (
-	dbhost   = "localhost"
+	dbhost   = "db"
 	dbport   = 5432
 	user     = "latte"
 	password = "latte"
@@ -64,11 +64,11 @@ func main() {
 	}
 	defer logFile.Close()
 
-	logger := slog.New(slog.NewTextHandler(logFile, nil))
+	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 
 	// Initialize repositories (Data Access Layer)
-	psqlInfo := fmt.Sprintf("user=%s password=%s dbname=%s sslmode=disable",
-		user, password, dbname)
+	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
+		dbhost, dbport, user, password, dbname)
 
 	db, err := sql.Open("postgres", psqlInfo)
 	if err != nil {
