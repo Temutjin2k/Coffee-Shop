@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
 	"log"
 	"log/slog"
@@ -12,6 +13,16 @@ import (
 	"hot-coffee/internal/handler"
 	"hot-coffee/internal/service"
 	"hot-coffee/utils"
+
+	_ "github.com/lib/pq"
+)
+
+const (
+	dbhost   = "localhost"
+	dbport   = 5432
+	user     = "latte"
+	password = "latte"
+	dbname   = "frappuccino"
 )
 
 func main() {
@@ -49,12 +60,29 @@ func main() {
 	logFile, err := os.OpenFile(logFilePath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o666)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "Failed to open log file:", err)
+		os.Exit(1)
 	}
 	defer logFile.Close()
 
 	logger := slog.New(slog.NewTextHandler(logFile, nil))
 
 	// Initialize repositories (Data Access Layer)
+	psqlInfo := fmt.Sprintf("user=%s password=%s dbname=%s sslmode=disable",
+		user, password, dbname)
+
+	db, err := sql.Open("postgres", psqlInfo)
+	if err != nil {
+		logger.Error("Error creating sql.DB", "Error", err)
+		os.Exit(1)
+	}
+	defer db.Close()
+
+	err = db.Ping()
+	if err != nil {
+		logger.Error("Error connecting to database", "Error", err)
+		os.Exit(1)
+	}
+
 	orderRepo := dal.NewOrderRepository(ordersPath)
 	menuRepo := dal.NewMenuRepository(menuItemsPath)
 	inventoryRepo := dal.NewInventoryRepository(inventoryPath)
