@@ -84,27 +84,7 @@ func (s *OrderService) UpdateOrder(updatedOrder models.Order, OrderID string) er
 			return errors.New("something wrong with your updated order")
 		}
 	}
-	existingOrders, err := s.orderRepo.GetAll()
-	if err != nil {
-		return err
-	}
-	flag := false
-	for i, order := range existingOrders {
-		if order.ID == OrderID {
-			if order.Status == "closed" {
-				return errors.New("could not update the order because it is already closed")
-			}
-			flag = true
-			existingOrders[i].CustomerName = updatedOrder.CustomerName
-			existingOrders[i].ID = OrderID
-			existingOrders[i].Items = updatedOrder.Items
-			existingOrders[i].Status = "open"
-		}
-	}
-	if flag {
-		return s.orderRepo.SaveAll(existingOrders)
-	}
-	return errors.New("the requested order does not exist")
+	return s.orderRepo.SaveUpdatedOrder(updatedOrder, OrderID)
 }
 
 func (s *OrderService) GetTotalSales() (models.TotalSales, error) {
