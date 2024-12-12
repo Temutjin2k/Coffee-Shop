@@ -3,7 +3,6 @@ package service
 import (
 	"errors"
 	"sort"
-	"strconv"
 	"strings"
 	"time"
 
@@ -34,11 +33,6 @@ func (s *OrderService) AddOrder(order models.Order) error {
 		}
 	}
 
-	OrderID, err := s.orderRepo.GetID()
-	if err != nil {
-		return err
-	}
-	order.ID = strconv.Itoa(OrderID)
 	Location, err := time.LoadLocation("Asia/Aqtau")
 	if err != nil {
 		return err
@@ -139,29 +133,30 @@ func (s *OrderService) GetPopularItems(popularItemsNum int) (models.PopularItems
 }
 
 func (s *OrderService) DeleteOrderByID(OrderID string) error {
-	Orders, err := s.GetAllOrders()
-	if err != nil {
-		return err
-	}
-	flag := false
-	NewOrders := make([]models.Order, 0)
-	for _, order := range Orders {
-		if order.ID != OrderID {
-			var NewOrder models.Order
-			NewOrder.CreatedAt = order.CreatedAt
-			NewOrder.CustomerName = order.CustomerName
-			NewOrder.ID = order.ID
-			NewOrder.Items = order.Items
-			NewOrder.Status = order.Status
-			NewOrders = append(NewOrders, NewOrder)
-		} else {
-			flag = true
-		}
-	}
-	if flag {
-		return s.orderRepo.SaveAll(NewOrders)
-	}
-	return errors.New("the order with given ID does not exist")
+	// Orders, err := s.GetAllOrders()
+	// if err != nil {
+	// 	return err
+	// }
+	// flag := false
+	// NewOrders := make([]models.Order, 0)
+	// for _, order := range Orders {
+	// 	if order.ID != OrderID {
+	// 		var NewOrder models.Order
+	// 		NewOrder.CreatedAt = order.CreatedAt
+	// 		NewOrder.CustomerName = order.CustomerName
+	// 		NewOrder.ID = order.ID
+	// 		NewOrder.Items = order.Items
+	// 		NewOrder.Status = order.Status
+	// 		NewOrders = append(NewOrders, NewOrder)
+	// 	} else {
+	// 		flag = true
+	// 	}
+	// }
+	// if flag {
+	// 	return s.orderRepo.SaveAll(NewOrders)
+	// }
+	// return errors.New("the order with given ID does not exist")
+	return nil
 }
 
 func (s *OrderService) CloseOrder(OrderID string) error {
@@ -190,6 +185,6 @@ func (s *OrderService) CloseOrder(OrderID string) error {
 			Orders[i].Status = "closed"
 		}
 	}
-
-	return s.orderRepo.SaveAll(Orders)
+	return nil
+	// return s.orderRepo.SaveAll(Orders)
 }

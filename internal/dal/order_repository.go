@@ -2,13 +2,9 @@ package dal
 
 import (
 	"database/sql"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
-	"os"
-	"path/filepath"
-	"strconv"
 
 	"hot-coffee/models"
 )
@@ -35,39 +31,35 @@ func (repo *OrderRepository) GetAll() ([]models.Order, error) {
 }
 
 func (repo *OrderRepository) Add(order models.Order) error {
+	// Insert into `orders` and retrieve the ID
 	queryOrder := `
-	insert into orders (CustomerName, CreatedAt, Status) values
-	($1, $2, $3)
-	`
-	_, err := repo.db.Query(queryOrder, order.CustomerName, order.CreatedAt, order.Status)
+        INSERT INTO orders (CustomerName, CreatedAt, Status)
+        VALUES ($1, $2, $3)
+        RETURNING ID
+    `
+	var ID int
+	repo.db.QueryRow(queryOrder, order.CustomerName, order.CreatedAt, order.Status).Scan(&ID)
 
 	for _, v := range order.Items {
 		queryOrderItems := `
-		insert into order_items (ProductID, Quantity, OrderId) values
+		insert into order_items (ProductID, Quantity, OrderID) values
 		($1, $2, $3)
 		`
-		repo.db.Query(queryOrderItems, v.ProductID, v.Quantity, order.ID)
+
+		repo.db.Exec(queryOrderItems, v.ProductID, v.Quantity, ID)
 	}
 
-	return err
+	return nil
 }
 
 func (repo *OrderRepository) SaveUpdatedOrder(updatedOrder models.Order, OrderID string) error {
-	queryCheckID := `
-	select max(ID) from orders
-	`
-	var tempID string
-	row, _ := repo.db.Query(queryCheckID)
-	row.Scan(&tempID)
-	temp1, _ := strconv.Atoi(OrderID)
-	temp2, _ := strconv.Atoi(tempID)
-	if temp1 > temp2 {
-		return errors.New("the requested order does not exists")
-	}
 	queryCheckStatus := `
 	select Status from orders where ID = $1
 	`
-	row, _ = repo.db.Query(queryCheckStatus, OrderID)
+	row, err := repo.db.Query(queryCheckStatus, OrderID)
+	if err != nil {
+		return err
+	}
 	var Status string
 	row.Scan(&Status)
 	if Status == "closed" {
@@ -79,62 +71,40 @@ func (repo *OrderRepository) SaveUpdatedOrder(updatedOrder models.Order, OrderID
 	set CustomerName = $1, Status = $2
 	where ID = $3
 	`
-	_, err := repo.db.Query(queryUpdateOrder, updatedOrder.CustomerName, updatedOrder.Status, updatedOrder.ID)
+	_, err = repo.db.Query(queryUpdateOrder, updatedOrder.CustomerName, updatedOrder.Status, updatedOrder.ID)
+	if err != nil {
+		return err
+	}
 	for _, v := range updatedOrder.Items {
 		queryUpdateOrderItems := `
 		update order_items set ProductID = $1, Quantity = $2 where OrderID = $3
 		`
-		repo.db.Query(queryUpdateOrderItems, v.ProductID, v.Quantity, updatedOrder.ID)
+		_, err = repo.db.Query(queryUpdateOrderItems, v.ProductID, v.Quantity, updatedOrder.ID)
+		if err != nil {
+			return err
+		}
 	}
-	return err
+	return nil
 }
 
 func (repo *OrderRepository) DeleteOrder(OrderID string) error {
-	queryCheckID := `
-	select max(ID) from orders
-	`
-	var tempID string
-	row, _ := repo.db.Query(queryCheckID)
-	row.Scan(&tempID)
-	temp1, _ := strconv.Atoi(OrderID)
-	temp2, _ := strconv.Atoi(tempID)
-	if temp1 > temp2 {
-		return errors.New("the requested order does not exists")
-	}
 	queryDeleteOrder := `
 	delete from orders
 	where ID = $1
 	`
-	repo.db.Query(queryDeleteOrder, OrderID)
+	_, err := repo.db.Query(queryDeleteOrder, OrderID)
+	if err != nil {
+		return err
+	}
 	queryDeleteOrderItems := `
 	delete from order_items
 	where ID = $1
 	`
-	repo.db.Query(queryDeleteOrderItems, OrderID)
-}
-
-func (repo *OrderRepository) GetID() (int, error) {
-	configPath := filepath.Join(filepath.Dir(repo.path), "config.json")
-
-	ConfigContent, err := os.ReadFile(configPath)
+	_, err = repo.db.Query(queryDeleteOrderItems, OrderID)
 	if err != nil {
-		return -1, err
+		return err
 	}
-
-	var ID models.OrderID
-	err = json.Unmarshal(ConfigContent, &ID)
-	if err != nil {
-		return -1, err
-	}
-
-	i := ID.ID
-	ID.ID++
-	NewContent, err := json.MarshalIndent(ID, "", "    ")
-	if err != nil {
-		// TODO
-	}
-	os.WriteFile(configPath, NewContent, os.ModePerm)
-	return i, nil
+	return nil
 }
 
 func getOrders(db *sql.DB) ([]models.Order, error) {
@@ -144,7 +114,7 @@ func getOrders(db *sql.DB) ([]models.Order, error) {
 
 	rows, err := db.Query(query)
 	if err != nil {
-		return nil, fmt.Errorf("не удалось выполнить запрос: %w", err)
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -153,13 +123,13 @@ func getOrders(db *sql.DB) ([]models.Order, error) {
 	for rows.Next() {
 		var order models.Order
 		if err := rows.Scan(&order.ID, &order.CustomerName, &order.Status, &order.CreatedAt); err != nil {
-			return nil, fmt.Errorf("ошибка сканирования строки: %w", err)
+			return nil, err
 		}
 
 		// Получение элементов заказа
 		items, err := getOrderItems(db, order.ID)
 		if err != nil {
-			return nil, fmt.Errorf("ошибка получения элементов заказа: %w", err)
+			return nil, err
 		}
 		order.Items = items
 
