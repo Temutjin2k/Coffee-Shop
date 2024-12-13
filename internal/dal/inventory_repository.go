@@ -1,24 +1,24 @@
 package dal
 
 import (
+	"database/sql"
 	"encoding/json"
-	"os"
-
 	"hot-coffee/models"
+	"os"
 )
 
 // InventoryRepository implements InventoryRepository using JSON files
 type InventoryRepository struct {
-	path string
+	db *sql.DB
 }
 
 // NewInventoryRepository creates a new FileInventoryRepository
-func NewInventoryRepository(path string) *InventoryRepository {
-	return &InventoryRepository{path: path}
+func NewInventoryRepository(db *sql.DB) *InventoryRepository {
+	return &InventoryRepository{db: db}
 }
 
 func (repo *InventoryRepository) GetAll() ([]models.InventoryItem, error) {
-	content, err := os.ReadFile(repo.path)
+	content, err := os.ReadFile("qwe")
 	if err != nil {
 		return nil, err
 	}
@@ -60,7 +60,7 @@ func (repo *InventoryRepository) SubtractIngredients(ingredients map[string]floa
 		return err
 	}
 
-	return os.WriteFile(repo.path, jsonData, 0o644)
+	return os.WriteFile("qwe", jsonData, 0o644)
 }
 
 func (repo *InventoryRepository) SaveAll(items []models.InventoryItem) error {
@@ -68,5 +68,5 @@ func (repo *InventoryRepository) SaveAll(items []models.InventoryItem) error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(repo.path, jsonData, 0o644)
+	return os.WriteFile("qwe", jsonData, 0o644)
 }

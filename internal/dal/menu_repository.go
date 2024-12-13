@@ -1,31 +1,51 @@
 package dal
 
 import (
+	"database/sql"
 	"encoding/json"
-	"os"
-
 	"hot-coffee/models"
+	"os"
 )
 
 // MenuRepository implements MenuRepository using JSON files
 type MenuRepository struct {
-	path string
+	db *sql.DB
 }
 
 // NewMenuRepository creates a new FileMenuRepository
-func NewMenuRepository(path string) *MenuRepository {
-	return &MenuRepository{path: path}
+func NewMenuRepository(db *sql.DB) *MenuRepository {
+	return &MenuRepository{db: db}
 }
 
 func (repo *MenuRepository) GetAll() ([]models.MenuItem, error) {
-	content, err := os.ReadFile(repo.path)
+	queryMenuItems := `
+	select ID, Name, Description, Price from menu_items
+	`
+	rows, err := repo.db.Query(queryMenuItems)
 	if err != nil {
-		return nil, err
+		return []models.MenuItem{}, err
 	}
-
-	var menuItems []models.MenuItem
-	err = json.Unmarshal(content, &menuItems)
-	return menuItems, err
+	var MenuItems []models.MenuItem
+	for rows.Next() {
+		var MenuItem models.MenuItem
+		rows.Scan(&MenuItem.ID, &MenuItem.Name, &MenuItem.Description, &MenuItem.Price)
+		var MenuItemIngredients []models.MenuItemIngredient
+		queryMenuItemIngredients := `
+	        select IngredientID, Quantity from menu_item_ingredients where MenuID = $1
+	    `
+		rows1, err := repo.db.Query(queryMenuItemIngredients, MenuItem.ID)
+		if err != nil {
+			return []models.MenuItem{}, err
+		}
+		for rows1.Next() {
+			var MenuItemIngredient models.MenuItemIngredient
+			rows1.Scan(&MenuItemIngredient.IngredientID, &MenuItemIngredient.Quantity)
+			MenuItemIngredients = append(MenuItemIngredients, MenuItemIngredient)
+		}
+		MenuItem.Ingredients = MenuItemIngredients
+		MenuItems = append(MenuItems, MenuItem)
+	}
+	return MenuItems, nil
 }
 
 func (repo *MenuRepository) Exists(itemID string) bool {
@@ -43,5 +63,5 @@ func (repo *MenuRepository) SaveAll(menuItems []models.MenuItem) error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(repo.path, jsonData, 0o644)
+	return os.WriteFile("qwe", jsonData, 0o644)
 }
