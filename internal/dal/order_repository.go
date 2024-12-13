@@ -4,9 +4,8 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"log"
-
 	"hot-coffee/models"
+	"log"
 )
 
 // OrderRepository implements OrderRepository using JSON files
@@ -88,20 +87,21 @@ func (repo *OrderRepository) SaveUpdatedOrder(updatedOrder models.Order, OrderID
 }
 
 func (repo *OrderRepository) DeleteOrder(OrderID string) error {
+	queryDeleteOrderItems := `
+	delete from order_items
+	where OrderID = $1
+	`
+	_, err := repo.db.Exec(queryDeleteOrderItems, OrderID)
+	if err != nil {
+		return err
+	}
 	queryDeleteOrder := `
 	delete from orders
 	where ID = $1
 	`
-	_, err := repo.db.Query(queryDeleteOrder, OrderID)
+	_, err = repo.db.Exec(queryDeleteOrder, OrderID)
 	if err != nil {
-		return err
-	}
-	queryDeleteOrderItems := `
-	delete from order_items
-	where ID = $1
-	`
-	_, err = repo.db.Query(queryDeleteOrderItems, OrderID)
-	if err != nil {
+		log.Println("qwe")
 		return err
 	}
 	return nil
