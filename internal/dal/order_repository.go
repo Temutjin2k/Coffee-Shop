@@ -163,3 +163,51 @@ func getOrderItems(db *sql.DB, orderID string) ([]models.OrderItem, error) {
 
 	return items, nil
 }
+
+func (repo *OrderRepository) GetNumberOfItems(startDate, endDate time.Time) (map[string]int, error) {
+	// Query to fetch the number of items ordered in the given date range
+	query := `
+		SELECT
+			m.Name,
+			COALESCE(SUM(oi.Quantity), 0) AS total_quantity
+		FROM
+			menu_items m
+		LEFT JOIN
+			order_items oi ON m.ID = oi.ProductID
+		LEFT JOIN
+			orders o ON oi.OrderID = o.ID
+		WHERE
+			o.CreatedAt BETWEEN $1 AND $2
+		GROUP BY
+			m.Name
+		ORDER BY
+			total_quantity DESC;
+	`
+
+	// Execute the query with parameters
+	rows, err := repo.db.Query(query, startDate, endDate)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute query: %v", err)
+	}
+	defer rows.Close()
+
+	// Create a map to store the results
+	result := make(map[string]int)
+
+	// Iterate over the rows and populate the result map
+	for rows.Next() {
+		var name string
+		var quantity int
+		if err := rows.Scan(&name, &quantity); err != nil {
+			return nil, fmt.Errorf("failed to scan row: %v", err)
+		}
+		result[name] = quantity
+	}
+
+	// Check for errors during row iteration
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error while iterating rows: %v", err)
+	}
+
+	return result, nil
+}

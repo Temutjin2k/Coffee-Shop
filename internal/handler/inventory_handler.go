@@ -147,3 +147,23 @@ func (h *InventoryHandler) DeleteInventoryItem(w http.ResponseWriter, r *http.Re
 	w.WriteHeader(http.StatusNoContent)
 	h.logger.Info("Request handled successfully.", "method", r.Method, "url", r.URL)
 }
+
+/*
+	GET /inventory/getLeftOvers?sortBy={value}&page={page}&pageSize={pageSize}: Returns the inventory leftovers in the coffee shop, including sorting and pagination options.
+	##### Parameters:
+    sortBy (optional): Determines the sorting method. Can be either:
+        price: Sort by item price.
+        quantity: Sort by item quantity.
+    page (optional): Current page number, starting from 1.
+    pageSize (optional): Number of items per page. Default value: 10.
+
+	##### Response:	
+    Includes:
+        A list of leftovers sorted and paginated.
+        currentPage: The current page number.
+        hasNextPage: Boolean indicating whether there is a next page.
+        totalPages: Total number of pages.
+*/
+func (h *InventoryHandler) GetLeftOvers(w http.ResponseWriter, r *http.Request){
+
+}

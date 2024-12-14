@@ -37,6 +37,10 @@ func ServerLaunch(db *sql.DB, logger *slog.Logger) {
 	mux.HandleFunc("DELETE /orders/{id}", orderHandler.DeleteOrder)
 	mux.HandleFunc("POST /orders/{id}/close", orderHandler.CloseOrder)
 
+	//TODO
+	mux.HandleFunc("GET /orders/numberOfOrderedItems", orderHandler.GetNumberOfOrdered)
+	// mux.HandleFunc("POST /orders/batch-process", nil)
+
 	mux.HandleFunc("POST /menu", menuHandler.PostMenu)
 	mux.HandleFunc("GET /menu", menuHandler.GetMenu)
 	mux.HandleFunc("GET /menu/{id}", menuHandler.GetMenuItem)
@@ -49,12 +53,20 @@ func ServerLaunch(db *sql.DB, logger *slog.Logger) {
 	mux.HandleFunc("PUT /inventory/{id}", inventoryHandler.PutInventoryItem)
 	mux.HandleFunc("DELETE /inventory/{id}", inventoryHandler.DeleteInventoryItem)
 
+	//TODO
+	// mux.HandleFunc("GET /inventory/getLeftOvers", nil)
+
 	mux.HandleFunc("GET /reports/total-sales", reportHandler.TotalSalesHandler)
 	mux.HandleFunc("GET /reports/popular-items", reportHandler.PopularItemsHandler)
 
-	address := "http://localhost:" + "8080" + "/"
+	//TODO
+	// mux.HandleFunc("GET /reports/search", nil)
+	// mux.HandleFunc("GET /reports/orderedItemsByPeriod", nil)
+
+
+	address := "http://localhost:8080/"
 	fmt.Println("Server launched on address:", address)
 
 	logger.Info("Application started", "Address", address)
-	log.Fatal(http.ListenAndServe(":"+"8080", mux))
+	log.Fatal(http.ListenAndServe(":8080", mux))
 }
