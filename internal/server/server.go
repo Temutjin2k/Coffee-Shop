@@ -56,5 +56,5 @@ func ServerLaunch(db *sql.DB, logger *slog.Logger) {
 	address := "http://localhost:8080/"
 
 	logger.Info("Application started", "Address", address)
-	log.Fatal(http.ListenAndServe(":8080", mux))
+	log.Fatal(http.ListenAndServe(":8081", mux))
 }

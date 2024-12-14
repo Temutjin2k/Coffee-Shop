@@ -2,9 +2,7 @@ package dal
 
 import (
 	"database/sql"
-	"encoding/json"
 	"hot-coffee/models"
-	"os"
 )
 
 // MenuRepository implements MenuRepository using JSON files
@@ -80,13 +78,22 @@ func (repo *MenuRepository) UpdateMenuItemRepo(menuItem models.MenuItem) error {
 	if err != nil {
 		return err
 	}
-	for _, v := range menuItem.Ingredients {
-		queryUpdateMenuIngredients := `
-		update menu_item_ingredients 
-		set IngredientID = $1, Quantity = $2
-		where MenuID = $3
+	queryUpdateMenuIngredients1 := `
+			delete from menu_item_ingredients 
+			where MenuID = $1
 		`
-		_, err = repo.db.Exec(queryUpdateMenuIngredients, v.IngredientID, v.Quantity, menuItem.ID)
+	// Execute the update query
+	_, err = repo.db.Exec(queryUpdateMenuIngredients1, menuItem.ID)
+	if err != nil {
+		return err
+	}
+	for _, v := range menuItem.Ingredients {
+
+		queryUpdateMenuIngredients2 := `
+			insert into menu_item_ingredients (MenuID, IngredientID, Quantity) values
+			($1, $2, $3)
+		`
+		_, err = repo.db.Exec(queryUpdateMenuIngredients2, menuItem.ID, v.IngredientID, v.Quantity)
 		if err != nil {
 			return err
 		}
@@ -94,10 +101,24 @@ func (repo *MenuRepository) UpdateMenuItemRepo(menuItem models.MenuItem) error {
 	return nil
 }
 
-func (repo *MenuRepository) SaveAll(menuItems []models.MenuItem) error {
-	jsonData, err := json.MarshalIndent(menuItems, "", "    ")
+func (repo *MenuRepository) AddMenuItemRepo(menuItem models.MenuItem) error {
+	queryAddItem := `
+	Insert into menu_items (Name, Description, Price) values
+    ($1, $2, $3)
+	`
+	_, err := repo.db.Exec(queryAddItem, menuItem.Name, menuItem.Description, menuItem.Price)
 	if err != nil {
 		return err
 	}
-	return os.WriteFile("qwe", jsonData, 0o644)
+	for _, v := range menuItem.Ingredients {
+		queryAddItemIngredients := `
+		insert into menu_item_ingredients (MenuID, IngredientID, Quantity) values
+		($1, $2, $3)
+	    `
+		_, err = repo.db.Exec(queryAddItemIngredients, menuItem.ID, v.IngredientID, v.Quantity)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }

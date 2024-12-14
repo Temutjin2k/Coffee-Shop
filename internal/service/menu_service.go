@@ -114,15 +114,7 @@ func (s *MenuService) SubtractIngredientsByID(OrderID string, quantity int) erro
 }
 
 func (s *MenuService) AddMenuItem(menuItem models.MenuItem) error {
-	// Load current menu items
-	menuItems, err := s.menuRepo.GetAll()
-	if err != nil {
-		return err
-	}
-
-	menuItems = append(menuItems, menuItem)
-
-	return s.menuRepo.SaveAll(menuItems)
+	return s.menuRepo.AddMenuItemRepo(menuItem)
 }
 
 func (s *MenuService) GetMenuItem(MenuItemID string) (models.MenuItem, error) {
