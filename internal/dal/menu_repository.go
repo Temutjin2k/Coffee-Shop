@@ -58,6 +58,42 @@ func (repo *MenuRepository) Exists(itemID string) bool {
 	return false
 }
 
+func (repo *MenuRepository) DeleteMenuItemRepo(MenuItemID string) error {
+	queryDeleteMenuItem := `
+	delete from menu_items
+	where ID = $1
+	`
+	_, err := repo.db.Exec(queryDeleteMenuItem, MenuItemID)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (repo *MenuRepository) UpdateMenuItemRepo(menuItem models.MenuItem) error {
+	queryUpdateMenu := `
+	update menu_items
+	set Name = $1, Description = $2, Price = $3
+	where ID = $4
+	`
+	_, err := repo.db.Exec(queryUpdateMenu, menuItem.Name, menuItem.Description, menuItem.Price, menuItem.ID)
+	if err != nil {
+		return err
+	}
+	for _, v := range menuItem.Ingredients {
+		queryUpdateMenuIngredients := `
+		update menu_item_ingredients 
+		set IngredientID = $1, Quantity = $2
+		where MenuID = $3
+		`
+		_, err = repo.db.Exec(queryUpdateMenuIngredients, v.IngredientID, v.Quantity, menuItem.ID)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (repo *MenuRepository) SaveAll(menuItems []models.MenuItem) error {
 	jsonData, err := json.MarshalIndent(menuItems, "", "    ")
 	if err != nil {

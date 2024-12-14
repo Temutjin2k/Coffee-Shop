@@ -2,12 +2,11 @@ package handler
 
 import (
 	"encoding/json"
-	"log/slog"
-	"net/http"
-
 	"hot-coffee/internal/ErrorHandler"
 	"hot-coffee/internal/service"
 	"hot-coffee/models"
+	"log/slog"
+	"net/http"
 )
 
 type MenuHandler struct {
@@ -112,6 +111,7 @@ func (h *MenuHandler) PutMenuItem(w http.ResponseWriter, r *http.Request) {
 		ErrorHandler.Error(w, "Could not read requested menu item", http.StatusInternalServerError)
 		return
 	}
+	RequestedMenuItem.ID = r.PathValue("id")
 
 	err = h.menuService.CheckNewMenu(RequestedMenuItem)
 	if err != nil {
@@ -120,11 +120,11 @@ func (h *MenuHandler) PutMenuItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err = h.menuService.IngredientsCheckForNewItem(RequestedMenuItem); err != nil {
-		h.logger.Error(err.Error(), "method", r.Method, "url", r.URL)
-		ErrorHandler.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
+	// if err = h.menuService.IngredientsCheckForNewItem(RequestedMenuItem); err != nil {
+	// 	h.logger.Error(err.Error(), "method", r.Method, "url", r.URL)
+	// 	ErrorHandler.Error(w, err.Error(), http.StatusBadRequest)
+	// 	return
+	// }
 
 	err = h.menuService.UpdateMenuItem(RequestedMenuItem)
 	if err != nil {

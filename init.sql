@@ -18,8 +18,7 @@ CREATE TABLE menu_items (
     ID SERIAL PRIMARY KEY,
     Name VARCHAR(50),
     Description TEXT,
-    Price NUMERIC(10, 2),
-    Field VARCHAR(50)
+    Price NUMERIC(10, 2)
 );
 
 CREATE TABLE inventory (
@@ -58,10 +57,9 @@ CREATE TABLE menu_item_ingredients (
     IngredientID INT,
     Quantity INT,
     PRIMARY KEY (MenuID, IngredientID),
-    FOREIGN KEY (MenuID) REFERENCES menu_items(ID),
+    FOREIGN KEY (MenuID) REFERENCES menu_items(ID) ON DELETE CASCADE,
     FOREIGN KEY (IngredientID) REFERENCES inventory(IngredientID)
 );
-
 CREATE TABLE order_status_history (
     ID SERIAL PRIMARY KEY,
     OrderID INT,

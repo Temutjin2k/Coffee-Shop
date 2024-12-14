@@ -2,10 +2,9 @@ package service
 
 import (
 	"errors"
-	"strings"
-
 	"hot-coffee/internal/dal"
 	"hot-coffee/models"
+	"strings"
 )
 
 type MenuService struct {
@@ -18,44 +17,11 @@ func NewMenuService(menuRepo dal.MenuRepository, inventoryRepo dal.InventoryRepo
 }
 
 func (s *MenuService) DeleteMenuItem(MenuItemID string) error {
-	MenuItems, err := s.menuRepo.GetAll()
-	if err != nil {
-		return err
-	}
-	NewMenuItems := make([]models.MenuItem, 0)
-
-	for _, MenuItem := range MenuItems {
-		if MenuItem.ID != MenuItemID {
-			var NewItem models.MenuItem
-			NewItem.Description = MenuItem.Description
-			NewItem.ID = MenuItem.ID
-			NewItem.Ingredients = MenuItem.Ingredients
-			NewItem.Name = MenuItem.Name
-			NewItem.Price = MenuItem.Price
-			NewMenuItems = append(NewMenuItems, NewItem)
-		}
-	}
-	s.menuRepo.SaveAll(NewMenuItems)
-	return nil
+	return s.menuRepo.DeleteMenuItemRepo(MenuItemID)
 }
 
 func (s *MenuService) UpdateMenuItem(menuItem models.MenuItem) error {
-	MenuItems, err := s.menuRepo.GetAll()
-	if err != nil {
-		return err
-	}
-
-	for i, MenuItem := range MenuItems {
-		if MenuItem.ID == menuItem.ID {
-			MenuItems[i].Description = menuItem.Description
-			MenuItems[i].ID = menuItem.ID
-			MenuItems[i].Ingredients = menuItem.Ingredients
-			MenuItems[i].Name = menuItem.Name
-			MenuItems[i].Price = menuItem.Price
-		}
-	}
-	s.menuRepo.SaveAll(MenuItems)
-	return nil
+	return s.menuRepo.UpdateMenuItemRepo(menuItem)
 }
 
 func (s *MenuService) MenuCheckByID(MenuItemID string, isDelete bool) error {
