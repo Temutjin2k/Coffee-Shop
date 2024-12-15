@@ -122,3 +122,14 @@ func (repo *MenuRepository) AddMenuItemRepo(menuItem models.MenuItem) error {
 	}
 	return nil
 }
+
+func (repo *MenuRepository) MenuCheckByIDRepo(ID string) bool {
+	queryIfExists := `
+	select ID from menu_items where ID = $1
+	`
+	rows, err := repo.db.Query(queryIfExists, ID)
+	if err != nil {
+		return false
+	}
+	return rows.Next()
+}

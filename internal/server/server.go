@@ -37,6 +37,7 @@ func ServerLaunch(db *sql.DB, logger *slog.Logger) {
 	mux.HandleFunc("PUT /orders/{id}", orderHandler.PutOrder)
 	mux.HandleFunc("DELETE /orders/{id}", orderHandler.DeleteOrder)
 	mux.HandleFunc("POST /orders/{id}/close", orderHandler.CloseOrder)
+	mux.HandleFunc("POST /orders/batch-process", orderHandler.BatchHandler)
 
 	//TODO
 	mux.HandleFunc("GET /orders/numberOfOrderedItems", orderHandler.GetNumberOfOrdered)
