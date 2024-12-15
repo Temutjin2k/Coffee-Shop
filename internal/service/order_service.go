@@ -3,7 +3,6 @@ package service
 import (
 	"errors"
 	"fmt"
-	"log"
 	"sort"
 	"strings"
 	"time"
@@ -72,7 +71,6 @@ func (s *OrderService) UpdateOrder(updatedOrder models.Order, OrderID string) er
 			return errors.New("something wrong with your updated order")
 		}
 	}
-	log.Println("qwe")
 	return s.orderRepo.SaveUpdatedOrder(updatedOrder, OrderID)
 }
 
