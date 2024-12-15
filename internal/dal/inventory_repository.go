@@ -2,71 +2,97 @@ package dal
 
 import (
 	"database/sql"
-	"encoding/json"
 	"hot-coffee/models"
-	"os"
 )
 
-// InventoryRepository implements InventoryRepository using JSON files
 type InventoryRepository struct {
 	db *sql.DB
 }
 
-// NewInventoryRepository creates a new FileInventoryRepository
 func NewInventoryRepository(db *sql.DB) *InventoryRepository {
 	return &InventoryRepository{db: db}
 }
 
 func (repo *InventoryRepository) GetAll() ([]models.InventoryItem, error) {
-	content, err := os.ReadFile("qwe")
+	queryGetIngridients := `
+	select IngredientID, Name, Quantity, Unit from inventory
+	`
+	rows, err := repo.db.Query(queryGetIngridients)
 	if err != nil {
-		return nil, err
+		return []models.InventoryItem{}, err
 	}
+	var InventoryItems []models.InventoryItem
 
-	var inventoryItems []models.InventoryItem
-	err = json.Unmarshal(content, &inventoryItems)
-	return inventoryItems, err
+	for rows.Next() {
+		var InventoryItem models.InventoryItem
+		err = rows.Scan(&InventoryItem.IngredientID, &InventoryItem.Name, &InventoryItem.Quantity, &InventoryItem.Unit)
+		if err != nil {
+			return []models.InventoryItem{}, nil
+		}
+		InventoryItems = append(InventoryItems, InventoryItem)
+	}
+	return InventoryItems, nil
 }
 
-// Check if ingridient by given ID exists
 func (repo *InventoryRepository) Exists(ID string) bool {
-	inventoryItems, err := repo.GetAll()
+	queryIfExists := `
+	select IngredientID from inventory where IngredientID = $1
+	`
+	rows, err := repo.db.Query(queryIfExists, ID)
 	if err != nil {
 		return false
 	}
-
-	for _, item := range inventoryItems {
-		if item.IngredientID == ID {
-			return true
-		}
-	}
-	return false
+	return rows.Next()
 }
 
 func (repo *InventoryRepository) SubtractIngredients(ingredients map[string]float64) error {
-	inventoryItems, err := repo.GetAll()
-	if err != nil {
-		return err
-	}
-
-	for i, inventoryItem := range inventoryItems {
-		if value, exists := ingredients[inventoryItem.IngredientID]; exists {
-			inventoryItems[i].Quantity -= value
+	for key, value := range ingredients {
+		queryToSubtract := `
+	        update inventory
+	        set Quantity  = Quantity - $1
+	        where IngredientID = $2
+	    `
+		_, err := repo.db.Exec(queryToSubtract, value, key)
+		if err != nil {
+			return err
 		}
 	}
-
-	jsonData, err := json.MarshalIndent(inventoryItems, "", "    ")
-	if err != nil {
-		return err
-	}
-
-	return os.WriteFile("qwe", jsonData, 0o644)
+	return nil
 }
 
-func (repo *InventoryRepository) SaveAll(items []models.InventoryItem) error {
-	jsonData, err := json.MarshalIndent(items, "", "    ")
+func (repo *InventoryRepository) AddInventoryItemRepo(item models.InventoryItem) error {
+	queryToAddInventory := `
+	insert into inventory (Name, Quantity, Unit) values
+	($1, $2, $3)
+	`
+	_, err := repo.db.Exec(queryToAddInventory, item.Name, item.Quantity, item.Unit)
 	if err != nil {
 		return err
 	}
-	return os.WriteFile("qwe", jsonData, 0o644)
+	return nil
+}
+
+func (repo *InventoryRepository) UpdateItemRepo(id string, newItem models.InventoryItem) error {
+	queryToUpdate := `
+	update inventory
+	set Quantity = $1, set Name = $2, set Unit = $3
+	where IngredientID = $4
+	`
+	_, err := repo.db.Exec(queryToUpdate, newItem.Quantity, newItem.Name, newItem.Unit, id)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (repo *InventoryRepository) DeleteItemRepo(id string) error {
+	queryToDelete := `
+	delete from inventory
+	where ID = $1
+	`
+	_, err := repo.db.Exec(queryToDelete, id)
+	if err != nil {
+		return err
+	}
+	return nil
 }

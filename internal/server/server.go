@@ -2,7 +2,7 @@ package server
 
 import (
 	"database/sql"
-	"fmt"
+	"hot-coffee/internal/config"
 	"hot-coffee/internal/dal"
 	"hot-coffee/internal/handler"
 	"hot-coffee/internal/service"
@@ -12,6 +12,7 @@ import (
 )
 
 func ServerLaunch(db *sql.DB, logger *slog.Logger) {
+	config.InitDB(db)
 	orderRepo := dal.NewOrderRepository(db)
 	menuRepo := dal.NewMenuRepository(db)
 	inventoryRepo := dal.NewInventoryRepository(db)
@@ -59,13 +60,7 @@ func ServerLaunch(db *sql.DB, logger *slog.Logger) {
 	mux.HandleFunc("GET /reports/total-sales", reportHandler.TotalSalesHandler)
 	mux.HandleFunc("GET /reports/popular-items", reportHandler.PopularItemsHandler)
 
-	//TODO
-	// mux.HandleFunc("GET /reports/search", nil)
-	// mux.HandleFunc("GET /reports/orderedItemsByPeriod", nil)
-
-
 	address := "http://localhost:8080/"
-	fmt.Println("Server launched on address:", address)
 
 	logger.Info("Application started", "Address", address)
 	log.Fatal(http.ListenAndServe(":8080", mux))

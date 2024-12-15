@@ -2,11 +2,10 @@ package handler
 
 import (
 	"encoding/json"
-	"log/slog"
-	"net/http"
-
 	"hot-coffee/internal/ErrorHandler"
 	"hot-coffee/internal/service"
+	"log/slog"
+	"net/http"
 )
 
 type AggregationHandler struct {

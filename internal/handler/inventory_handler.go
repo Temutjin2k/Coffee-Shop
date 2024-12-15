@@ -2,12 +2,11 @@ package handler
 
 import (
 	"encoding/json"
-	"log/slog"
-	"net/http"
-
 	"hot-coffee/internal/ErrorHandler"
 	"hot-coffee/internal/service"
 	"hot-coffee/models"
+	"log/slog"
+	"net/http"
 )
 
 type InventoryHandler struct {
@@ -29,7 +28,7 @@ func (h *InventoryHandler) PostInventory(w http.ResponseWriter, r *http.Request)
 	}
 
 	// Checking for empty fieldss
-	if newItem.Name == "" || newItem.IngredientID == "" || newItem.Unit == "" || newItem.Quantity <= 0 {
+	if newItem.Name == "" || newItem.Unit == "" || newItem.Quantity <= 0 {
 		h.logger.Error("Some fields are empty, equal or less than zero", "method", r.Method, "url", r.URL)
 		ErrorHandler.Error(w, "Some fields are empty, equal or less than zero", http.StatusBadRequest)
 		return

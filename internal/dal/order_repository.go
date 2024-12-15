@@ -107,6 +107,18 @@ func (repo *OrderRepository) DeleteOrder(OrderID string) error {
 	return nil
 }
 
+func (repo *OrderRepository) CloseOrderRepo(id string) error {
+	queryToClose := `
+	update orders set status = 'closed'
+	where ID = $1
+	`
+	_, err := repo.db.Exec(queryToClose, id)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func getOrders(db *sql.DB) ([]models.Order, error) {
 	query := `
 	 SELECT ID, CustomerName, Status, CreatedAt

@@ -158,33 +158,7 @@ func (s *OrderService) DeleteOrderByID(OrderID string) error {
 }
 
 func (s *OrderService) CloseOrder(OrderID string) error {
-	Orders, err := s.orderRepo.GetAll()
-	if err != nil {
-		return nil
-	}
-	var ClosingOrder models.Order
-
-	for _, order := range Orders {
-		if order.ID == OrderID {
-			if order.Status == "closed" {
-				return errors.New("the requested order already closed")
-			}
-			ClosingOrder.CreatedAt = order.CreatedAt
-			ClosingOrder.CustomerName = order.CustomerName
-			ClosingOrder.Items = order.Items
-		}
-	}
-	for i, order := range Orders {
-		if order.ID == OrderID {
-			Orders[i].CreatedAt = ClosingOrder.CreatedAt
-			Orders[i].CustomerName = ClosingOrder.CustomerName
-			Orders[i].ID = OrderID
-			Orders[i].Items = ClosingOrder.Items
-			Orders[i].Status = "closed"
-		}
-	}
-	return nil
-	// return s.orderRepo.SaveAll(Orders)
+	return s.orderRepo.CloseOrderRepo(OrderID)
 }
 
 func (s *OrderService) GetNumberOfItems(startDate, endDate string) (map[string]int, error){

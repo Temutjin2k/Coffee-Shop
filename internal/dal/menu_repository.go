@@ -2,9 +2,7 @@ package dal
 
 import (
 	"database/sql"
-	"encoding/json"
 	"hot-coffee/models"
-	"os"
 )
 
 // MenuRepository implements MenuRepository using JSON files
@@ -58,10 +56,69 @@ func (repo *MenuRepository) Exists(itemID string) bool {
 	return false
 }
 
-func (repo *MenuRepository) SaveAll(menuItems []models.MenuItem) error {
-	jsonData, err := json.MarshalIndent(menuItems, "", "    ")
+func (repo *MenuRepository) DeleteMenuItemRepo(MenuItemID string) error {
+	queryDeleteMenuItem := `
+	delete from menu_items
+	where ID = $1
+	`
+	_, err := repo.db.Exec(queryDeleteMenuItem, MenuItemID)
 	if err != nil {
 		return err
 	}
-	return os.WriteFile("qwe", jsonData, 0o644)
+	return nil
+}
+
+func (repo *MenuRepository) UpdateMenuItemRepo(menuItem models.MenuItem) error {
+	queryUpdateMenu := `
+	update menu_items
+	set Name = $1, Description = $2, Price = $3
+	where ID = $4
+	`
+	_, err := repo.db.Exec(queryUpdateMenu, menuItem.Name, menuItem.Description, menuItem.Price, menuItem.ID)
+	if err != nil {
+		return err
+	}
+	queryUpdateMenuIngredients1 := `
+			delete from menu_item_ingredients 
+			where MenuID = $1
+		`
+	// Execute the update query
+	_, err = repo.db.Exec(queryUpdateMenuIngredients1, menuItem.ID)
+	if err != nil {
+		return err
+	}
+	for _, v := range menuItem.Ingredients {
+
+		queryUpdateMenuIngredients2 := `
+			insert into menu_item_ingredients (MenuID, IngredientID, Quantity) values
+			($1, $2, $3)
+		`
+		_, err = repo.db.Exec(queryUpdateMenuIngredients2, menuItem.ID, v.IngredientID, v.Quantity)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (repo *MenuRepository) AddMenuItemRepo(menuItem models.MenuItem) error {
+	queryAddItem := `
+	Insert into menu_items (Name, Description, Price) values
+    ($1, $2, $3)
+	`
+	_, err := repo.db.Exec(queryAddItem, menuItem.Name, menuItem.Description, menuItem.Price)
+	if err != nil {
+		return err
+	}
+	for _, v := range menuItem.Ingredients {
+		queryAddItemIngredients := `
+		insert into menu_item_ingredients (MenuID, IngredientID, Quantity) values
+		($1, $2, $3)
+	    `
+		_, err = repo.db.Exec(queryAddItemIngredients, menuItem.ID, v.IngredientID, v.Quantity)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
