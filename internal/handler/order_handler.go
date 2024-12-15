@@ -36,11 +36,11 @@ func (h *OrderHandler) PostOrder(w http.ResponseWriter, r *http.Request) {
 			ErrorHandler.Error(w, "Requested order item does not exist in menu", http.StatusBadRequest)
 			return
 		}
-		// 	if err = h.menuService.IngredientsCheckByID(OrderItem.ProductID, OrderItem.Quantity); err != nil {
-		// 		h.logger.Error(err.Error(), "error", err, "method", r.Method, "url", r.URL)
-		// 		ErrorHandler.Error(w, err.Error(), http.StatusBadRequest)
-		// 		return
-		// 	}
+		if err = h.menuService.IngredientsCheckByID(OrderItem.ProductID, OrderItem.Quantity); err != nil {
+			h.logger.Error(err.Error(), "error", err, "method", r.Method, "url", r.URL)
+			ErrorHandler.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
 	}
 
 	err = h.orderService.AddOrder(NewOrder)
@@ -117,11 +117,11 @@ func (h *OrderHandler) PutOrder(w http.ResponseWriter, r *http.Request) {
 			ErrorHandler.Error(w, "Updated order item does not exist in menu", http.StatusBadRequest)
 			return
 		}
-		// if err = h.menuService.IngredientsCheckByID(OrderItem.ProductID, OrderItem.Quantity); err != nil {
-		// 	h.logger.Error(err.Error(), "error", err, "method", r.Method, "url", r.URL)
-		// 	ErrorHandler.Error(w, err.Error(), http.StatusBadRequest)
-		// 	return
-		// }
+		if err = h.menuService.IngredientsCheckByID(OrderItem.ProductID, OrderItem.Quantity); err != nil {
+			h.logger.Error(err.Error(), "error", err, "method", r.Method, "url", r.URL)
+			ErrorHandler.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
 	}
 	err = h.orderService.UpdateOrder(RequestedOrder, r.PathValue("id"))
 	if err != nil {

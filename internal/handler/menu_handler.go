@@ -38,11 +38,11 @@ func (h *MenuHandler) PostMenu(w http.ResponseWriter, r *http.Request) {
 		ErrorHandler.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	// if err = h.menuService.IngredientsCheckForNewItem(newItem); err != nil {
-	// 	h.logger.Error(err.Error(), "method", r.Method, "url", r.URL, "error", err)
-	// 	ErrorHandler.Error(w, err.Error(), http.StatusBadRequest)
-	// 	return
-	// }
+	if err = h.menuService.IngredientsCheckForNewItem(newItem); err != nil {
+		h.logger.Error(err.Error(), "method", r.Method, "url", r.URL, "error", err)
+		ErrorHandler.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 
 	// Add the new menu item using the service
 	if err = h.menuService.AddMenuItem(newItem); err != nil {
@@ -120,11 +120,11 @@ func (h *MenuHandler) PutMenuItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// if err = h.menuService.IngredientsCheckForNewItem(RequestedMenuItem); err != nil {
-	// 	h.logger.Error(err.Error(), "method", r.Method, "url", r.URL)
-	// 	ErrorHandler.Error(w, err.Error(), http.StatusBadRequest)
-	// 	return
-	// }
+	if err = h.menuService.IngredientsCheckForNewItem(RequestedMenuItem); err != nil {
+		h.logger.Error(err.Error(), "method", r.Method, "url", r.URL)
+		ErrorHandler.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 
 	err = h.menuService.UpdateMenuItem(RequestedMenuItem)
 	if err != nil {

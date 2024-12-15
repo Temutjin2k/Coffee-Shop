@@ -60,6 +60,7 @@ CREATE TABLE menu_item_ingredients (
     FOREIGN KEY (MenuID) REFERENCES menu_items(ID) ON DELETE CASCADE,
     FOREIGN KEY (IngredientID) REFERENCES inventory(IngredientID)
 );
+
 CREATE TABLE order_status_history (
     ID SERIAL PRIMARY KEY,
     OrderID INT,

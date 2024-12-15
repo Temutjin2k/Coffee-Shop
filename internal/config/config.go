@@ -52,7 +52,6 @@ func InitDB(db *sql.DB) {
 	insert into menu_item_ingredients (MenuID, IngredientID, Quantity) values
 	(1, 2, 200)
 	`
-
 	queryMenuItemsIngridients3 := `
 	insert into menu_item_ingredients (MenuID, IngredientID, Quantity) values
 	(2, 3, 100)
