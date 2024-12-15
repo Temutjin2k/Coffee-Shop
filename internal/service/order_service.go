@@ -12,14 +12,16 @@ import (
 )
 
 type OrderService struct {
-	orderRepo dal.OrderRepository
-	menuRepo  dal.MenuRepository
+	orderRepo     dal.OrderRepository
+	menuRepo      dal.MenuRepository
+	inventoryRepo dal.InventoryRepository
 }
 
-func NewOrderService(orderRepo dal.OrderRepository, menuRepo dal.MenuRepository) *OrderService {
+func NewOrderService(orderRepo dal.OrderRepository, menuRepo dal.MenuRepository, inventoryRepo dal.InventoryRepository) *OrderService {
 	return &OrderService{
-		orderRepo: orderRepo,
-		menuRepo:  menuRepo,
+		orderRepo:     orderRepo,
+		menuRepo:      menuRepo,
+		inventoryRepo: inventoryRepo,
 	}
 }
 
@@ -170,6 +172,6 @@ func (s *OrderService) GetNumberOfItems(startDate, endDate string) (map[string]i
 	return s.orderRepo.GetNumberOfItems(start, end)
 }
 
-func (s *OrderService) GetEarliestDate() string {
-	return s.orderRepo.GetEarliestDate()
+func (s *OrderService) SearchService(minPrice, maxPrice int, args []string, querySrting string) error {
+	return nil
 }

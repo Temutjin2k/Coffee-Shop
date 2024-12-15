@@ -2,14 +2,13 @@ package server
 
 import (
 	"database/sql"
-	"log"
-	"log/slog"
-	"net/http"
-
 	"hot-coffee/internal/config"
 	"hot-coffee/internal/dal"
 	"hot-coffee/internal/handler"
 	"hot-coffee/internal/service"
+	"log"
+	"log/slog"
+	"net/http"
 )
 
 func ServerLaunch(db *sql.DB, logger *slog.Logger) {
@@ -19,7 +18,7 @@ func ServerLaunch(db *sql.DB, logger *slog.Logger) {
 	inventoryRepo := dal.NewInventoryRepository(db)
 
 	// Initialize services (Business Logic Layer)
-	orderService := service.NewOrderService(*orderRepo, *menuRepo)
+	orderService := service.NewOrderService(*orderRepo, *menuRepo, *inventoryRepo)
 	menuService := service.NewMenuService(*menuRepo, *inventoryRepo)
 	inventoryService := service.NewInventoryService(*inventoryRepo)
 
@@ -61,6 +60,7 @@ func ServerLaunch(db *sql.DB, logger *slog.Logger) {
 
 	mux.HandleFunc("GET /reports/total-sales", reportHandler.TotalSalesHandler)
 	mux.HandleFunc("GET /reports/popular-items", reportHandler.PopularItemsHandler)
+	mux.HandleFunc("GET /reports/search", reportHandler.SearchHandler)
 
 	address := "http://localhost:8080/"
 
