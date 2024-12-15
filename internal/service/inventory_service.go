@@ -2,6 +2,8 @@ package service
 
 import (
 	"errors"
+	"strconv"
+
 	"hot-coffee/internal/dal"
 	"hot-coffee/models"
 )
@@ -56,4 +58,33 @@ func (s *InventoryService) DeleteItem(id string) error {
 
 func (s *InventoryService) Exists(id string) bool {
 	return s.inventoryRepo.Exists(id)
+}
+
+func (s *InventoryService) GetLeftOvers(sortBy, page, pageSize string) (map[string]any, error) {
+	if sortBy == "" {
+		sortBy = "price"
+	}
+
+	if page == "" {
+		page = "1"
+	}
+	pageNum, err := strconv.Atoi(page)
+	if err != nil || pageNum < 0 {
+		return nil, errors.New("invalid page parametr. page must be positive integer")
+	}
+
+	if pageSize == "" {
+		pageSize = "10"
+	}
+	pageSizeNum, err := strconv.Atoi(pageSize)
+
+	if err != nil || pageSizeNum < 0 {
+		return nil, errors.New("invalid pageSize parametr. pageSize must be positive integer")
+	}
+
+	if sortBy != "price" && sortBy != "quantity" {
+		return nil, errors.New("invalid sortBy value, must be 'price' or 'quantity")
+	}
+
+	return s.inventoryRepo.GetLeftOvers(sortBy, page, pageSize)
 }

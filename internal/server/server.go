@@ -57,7 +57,7 @@ func ServerLaunch(db *sql.DB, logger *slog.Logger) {
 	mux.HandleFunc("DELETE /inventory/{id}", inventoryHandler.DeleteInventoryItem)
 
 	// TODO
-	// mux.HandleFunc("GET /inventory/getLeftOvers", nil)
+	mux.HandleFunc("GET /inventory/getLeftOvers", inventoryHandler.GetLeftOvers)
 
 	mux.HandleFunc("GET /reports/total-sales", reportHandler.TotalSalesHandler)
 	mux.HandleFunc("GET /reports/popular-items", reportHandler.PopularItemsHandler)
