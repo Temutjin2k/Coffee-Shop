@@ -25,13 +25,10 @@ func (s *MenuService) UpdateMenuItem(menuItem models.MenuItem) error {
 }
 
 func (s *MenuService) MenuCheckByID(MenuItemID string, isDelete bool) error {
-	menuItems, _ := s.menuRepo.GetAll()
 	if isDelete {
 		flag := false
-		for _, item := range menuItems {
-			if item.ID == MenuItemID {
-				flag = true
-			}
+		if s.menuRepo.MenuCheckByIDRepo(MenuItemID) {
+			flag = true
 		}
 		if flag {
 			return nil
@@ -39,10 +36,8 @@ func (s *MenuService) MenuCheckByID(MenuItemID string, isDelete bool) error {
 			return errors.New("the requested menu item does not exist in menu")
 		}
 	}
-	for _, item := range menuItems {
-		if item.ID == MenuItemID {
-			return errors.New("the requested menu item to add already exists in menu")
-		}
+	if s.menuRepo.MenuCheckByIDRepo(MenuItemID) {
+		return errors.New("the requested menu item to add already exists in menu")
 	}
 	return nil
 }

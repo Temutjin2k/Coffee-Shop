@@ -6,7 +6,6 @@ import (
 	"hot-coffee/models"
 	"sort"
 	"strings"
-	"time"
 )
 
 type OrderService struct {
@@ -32,14 +31,6 @@ func (s *OrderService) AddOrder(order models.Order) error {
 		}
 	}
 
-	Location, err := time.LoadLocation("Asia/Aqtau")
-	if err != nil {
-		return err
-	}
-	timenow := time.Now().In(Location).Format(time.RFC3339)
-	order.CreatedAt = timenow
-	order.Status = "open"
-
 	return s.orderRepo.Add(order)
 }
 
@@ -48,7 +39,7 @@ func (s *OrderService) GetAllOrders() ([]models.Order, error) {
 	return s.orderRepo.GetAll()
 }
 
-func (s *OrderService) GetOrder(OrderID string) (models.Order, error) {
+func (s *OrderService) GetOrder(OrderID int) (models.Order, error) {
 	flag := false
 	AllOrders, err := s.orderRepo.GetAll()
 	if err != nil {
@@ -131,7 +122,7 @@ func (s *OrderService) GetPopularItems(popularItemsNum int) (models.PopularItems
 	return popularItems, nil
 }
 
-func (s *OrderService) DeleteOrderByID(OrderID string) error {
+func (s *OrderService) DeleteOrderByID(OrderID int) error {
 	Orders, err := s.GetAllOrders()
 	if err != nil {
 		return err

@@ -32,17 +32,19 @@ func (repo *OrderRepository) GetAll() ([]models.Order, error) {
 func (repo *OrderRepository) Add(order models.Order) error {
 	// Insert into `orders` and retrieve the ID
 	queryOrder := `
-        INSERT INTO orders (CustomerName, CreatedAt, Status)
-        VALUES ($1, $2, $3)
+        INSERT INTO orders (CustomerName)
+        VALUES ($1)
         RETURNING ID
     `
 	var ID int
-	repo.db.QueryRow(queryOrder, order.CustomerName, order.CreatedAt, order.Status).Scan(&ID)
+	repo.db.QueryRow(queryOrder, order.CustomerName).Scan(&ID)
 
 	for _, v := range order.Items {
 		queryOrderItems := `
 		insert into order_items (ProductID, Quantity, OrderID) values
 		($1, $2, $3)
+		ON CONFLICT (OrderID, ProductID)
+		DO UPDATE SET Quantity = order_items.Quantity + EXCLUDED.Quantity;
 		`
 
 		repo.db.Exec(queryOrderItems, v.ProductID, v.Quantity, ID)
@@ -86,7 +88,7 @@ func (repo *OrderRepository) SaveUpdatedOrder(updatedOrder models.Order, OrderID
 	return nil
 }
 
-func (repo *OrderRepository) DeleteOrder(OrderID string) error {
+func (repo *OrderRepository) DeleteOrder(OrderID int) error {
 	queryDeleteOrderItems := `
 	delete from order_items
 	where OrderID = $1
@@ -151,7 +153,7 @@ func getOrders(db *sql.DB) ([]models.Order, error) {
 	return orders, nil
 }
 
-func getOrderItems(db *sql.DB, orderID string) ([]models.OrderItem, error) {
+func getOrderItems(db *sql.DB, orderID int) ([]models.OrderItem, error) {
 	query := `
 	 SELECT ProductID, Quantity
 	 FROM order_items

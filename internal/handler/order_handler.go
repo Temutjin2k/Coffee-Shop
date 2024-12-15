@@ -2,11 +2,13 @@ package handler
 
 import (
 	"encoding/json"
+	"fmt"
 	"hot-coffee/internal/ErrorHandler"
 	"hot-coffee/internal/service"
 	"hot-coffee/models"
 	"log/slog"
 	"net/http"
+	"strconv"
 )
 
 type OrderHandler struct {
@@ -79,7 +81,13 @@ func (h *OrderHandler) GetOrders(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *OrderHandler) GetOrder(w http.ResponseWriter, r *http.Request) {
-	RequestedOrder, err := h.orderService.GetOrder(r.PathValue("id"))
+	ID, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		ErrorHandler.Error(w, "The id should be positive integer", http.StatusBadRequest)
+		h.logger.Error("The id should be positive integer", "method", r.Method, "url", r.URL)
+		return
+	}
+	RequestedOrder, err := h.orderService.GetOrder(ID)
 	if err != nil {
 		if err.Error() == "the order with given ID soes not exist" {
 			h.logger.Error(err.Error(), "error", err, "method", r.Method, "url", r.URL)
@@ -140,7 +148,13 @@ func (h *OrderHandler) PutOrder(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *OrderHandler) DeleteOrder(w http.ResponseWriter, r *http.Request) {
-	err := h.orderService.DeleteOrderByID(r.PathValue("id"))
+	ID, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		ErrorHandler.Error(w, "The id should be positive integer", http.StatusBadRequest)
+		h.logger.Error("The id should be positive integer", "method", r.Method, "url", r.URL)
+		return
+	}
+	err = h.orderService.DeleteOrderByID(ID)
 	if err != nil {
 		if err.Error() == "the order with given ID does not exist" {
 			h.logger.Error(err.Error(), "error", err, "method", r.Method, "url", r.URL)
@@ -157,7 +171,13 @@ func (h *OrderHandler) DeleteOrder(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *OrderHandler) CloseOrder(w http.ResponseWriter, r *http.Request) {
-	Order, err := h.orderService.GetOrder(r.PathValue("id"))
+	ID, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		ErrorHandler.Error(w, "The id should be positive integer", http.StatusBadRequest)
+		h.logger.Error("The id should be positive integer", "method", r.Method, "url", r.URL)
+		return
+	}
+	Order, err := h.orderService.GetOrder(ID)
 	if Order.Status == "closed" {
 		ErrorHandler.Error(w, "The order is already closed", http.StatusBadRequest)
 		h.logger.Error("The order is already closed", "method", r.Method, "url", r.URL)
@@ -195,4 +215,15 @@ func (h *OrderHandler) CloseOrder(w http.ResponseWriter, r *http.Request) {
 	}
 	h.logger.Info("Request handled successfully.", "method", r.Method, "url", r.URL)
 	w.WriteHeader(200)
+}
+
+func (h *OrderHandler) BatchHandler(w http.ResponseWriter, r *http.Request) {
+	var BatchOrders models.BatchOrders
+	err := json.NewDecoder(r.Body).Decode(&BatchOrders)
+	if err != nil {
+		fmt.Println("qwe")
+		h.logger.Error("Could not decode request json data", "error", err, "method", r.Method, "url", r.URL)
+		ErrorHandler.Error(w, "Could not decode request json data", http.StatusBadRequest)
+		return
+	}
 }
