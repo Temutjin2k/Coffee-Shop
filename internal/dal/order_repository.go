@@ -57,16 +57,22 @@ func (repo *OrderRepository) SaveUpdatedOrder(updatedOrder models.Order, OrderID
 	queryCheckStatus := `
 	select Status from orders where ID = $1
 	`
-	row, err := repo.db.Query(queryCheckStatus, OrderID)
-	if err != nil {
-		return err
-	}
 	var Status string
-	row.Scan(&Status)
+	// Use QueryRow instead of Query for single-row results
+	err := repo.db.QueryRow(queryCheckStatus, OrderID).Scan(&Status)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			log.Println("bro")
+			return errors.New("no order found with the given ID")
+		}
+		log.Println("bro")
+		return err // Return any other error
+	}
+
 	if Status == "closed" {
 		return errors.New("the requested order is already closed")
 	}
-
+	log.Println(Status)
 	queryUpdateOrder := `
 	update orders 
 	set CustomerName = $1
