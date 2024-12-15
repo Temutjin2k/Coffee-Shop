@@ -3,12 +3,12 @@ package service
 import (
 	"errors"
 	"fmt"
+	"hot-coffee/internal/dal"
+	"hot-coffee/models"
+	"log"
 	"sort"
 	"strings"
 	"time"
-
-	"hot-coffee/internal/dal"
-	"hot-coffee/models"
 )
 
 type OrderService struct {
@@ -160,10 +160,16 @@ func (s *OrderService) GetNumberOfItems(startDate, endDate string) (map[string]i
 	if err != nil {
 		return nil, fmt.Errorf("invalid time format of startDate")
 	}
+	log.Println(start)
 	end, err := time.Parse("2006-01-02", endDate)
 	if err != nil {
 		return nil, fmt.Errorf("invalid time format of endDate")
 	}
+	log.Println(end)
 
 	return s.orderRepo.GetNumberOfItems(start, end)
+}
+
+func (s *OrderService) GetEarliestDate() string {
+	return s.orderRepo.GetEarliestDate()
 }

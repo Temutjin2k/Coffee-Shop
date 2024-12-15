@@ -3,13 +3,13 @@ package handler
 import (
 	"encoding/json"
 	"fmt"
-	"log/slog"
-	"net/http"
-	"strconv"
-
 	"hot-coffee/internal/ErrorHandler"
 	"hot-coffee/internal/service"
 	"hot-coffee/models"
+	"log/slog"
+	"net/http"
+	"strconv"
+	"time"
 )
 
 type OrderHandler struct {
@@ -230,9 +230,15 @@ func (h *OrderHandler) CloseOrder(w http.ResponseWriter, r *http.Request) {
 func (h *OrderHandler) GetNumberOfOrdered(w http.ResponseWriter, r *http.Request) {
 	startDate := r.URL.Query().Get("startDate")
 	endDate := r.URL.Query().Get("endDate")
+	if startDate == "" {
+		startDate = "1970-01-01"
+	}
+	if endDate == "" {
+		endDate = time.Now().Format("2006-01-02")
+	}
 	items, err := h.orderService.GetNumberOfItems(startDate, endDate)
 	if err != nil {
-		h.logger.Error("Error getting number of ordered items", "query", r.URL.Query, "error", err)
+		h.logger.Error(err.Error(), "query", r.URL.Query, "error", err)
 		ErrorHandler.Error(w, fmt.Sprintf("Error getting number of ordered items. Error:%v", err), http.StatusInternalServerError)
 		return
 	}
