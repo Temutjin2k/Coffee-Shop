@@ -2,21 +2,14 @@ package service
 
 import (
 	"errors"
-<<<<<<< HEAD
 	"fmt"
+	"log"
 	"sort"
 	"strings"
 	"time"
 
 	"hot-coffee/internal/dal"
 	"hot-coffee/models"
-=======
-	"hot-coffee/internal/dal"
-	"hot-coffee/models"
-	"log"
-	"sort"
-	"strings"
->>>>>>> 26c8b7de4c5e871679f731c5fae00541067f0e31
 )
 
 type OrderService struct {

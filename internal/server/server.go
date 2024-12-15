@@ -2,13 +2,14 @@ package server
 
 import (
 	"database/sql"
+	"log"
+	"log/slog"
+	"net/http"
+
 	"hot-coffee/internal/config"
 	"hot-coffee/internal/dal"
 	"hot-coffee/internal/handler"
 	"hot-coffee/internal/service"
-	"log"
-	"log/slog"
-	"net/http"
 )
 
 func ServerLaunch(db *sql.DB, logger *slog.Logger) {
@@ -37,9 +38,9 @@ func ServerLaunch(db *sql.DB, logger *slog.Logger) {
 	mux.HandleFunc("PUT /orders/{id}", orderHandler.PutOrder)
 	mux.HandleFunc("DELETE /orders/{id}", orderHandler.DeleteOrder)
 	mux.HandleFunc("POST /orders/{id}/close", orderHandler.CloseOrder)
-	mux.HandleFunc("POST /orders/batch-process", orderHandler.BatchHandler)
+	mux.HandleFunc("POST /orders/batch-process", orderHandler.PostOrders)
 
-	//TODO
+	// TODO
 	mux.HandleFunc("GET /orders/numberOfOrderedItems", orderHandler.GetNumberOfOrdered)
 	// mux.HandleFunc("POST /orders/batch-process", nil)
 
@@ -55,7 +56,7 @@ func ServerLaunch(db *sql.DB, logger *slog.Logger) {
 	mux.HandleFunc("PUT /inventory/{id}", inventoryHandler.PutInventoryItem)
 	mux.HandleFunc("DELETE /inventory/{id}", inventoryHandler.DeleteInventoryItem)
 
-	//TODO
+	// TODO
 	// mux.HandleFunc("GET /inventory/getLeftOvers", nil)
 
 	mux.HandleFunc("GET /reports/total-sales", reportHandler.TotalSalesHandler)

@@ -3,21 +3,13 @@ package handler
 import (
 	"encoding/json"
 	"fmt"
-<<<<<<< HEAD
 	"log/slog"
 	"net/http"
+	"strconv"
 
 	"hot-coffee/internal/ErrorHandler"
 	"hot-coffee/internal/service"
 	"hot-coffee/models"
-=======
-	"hot-coffee/internal/ErrorHandler"
-	"hot-coffee/internal/service"
-	"hot-coffee/models"
-	"log/slog"
-	"net/http"
-	"strconv"
->>>>>>> 26c8b7de4c5e871679f731c5fae00541067f0e31
 )
 
 type OrderHandler struct {
@@ -226,7 +218,6 @@ func (h *OrderHandler) CloseOrder(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(200)
 }
 
-<<<<<<< HEAD
 /*
 		GET /orders/numberOfOrderedItems?startDate={startDate}&endDate={endDate}:
 		Returns a list of ordered items and their quantities for a specified time period.
@@ -259,15 +250,4 @@ Process multiple orders simultaneously while ensuring inventory consistency.
 This endpoint must handle concurrent orders and maintain data integrity using transactions.
 */
 func (h *OrderHandler) PostOrders(w http.ResponseWriter, r *http.Request) {
-=======
-func (h *OrderHandler) BatchHandler(w http.ResponseWriter, r *http.Request) {
-	var BatchOrders models.BatchOrders
-	err := json.NewDecoder(r.Body).Decode(&BatchOrders)
-	if err != nil {
-		fmt.Println("qwe")
-		h.logger.Error("Could not decode request json data", "error", err, "method", r.Method, "url", r.URL)
-		ErrorHandler.Error(w, "Could not decode request json data", http.StatusBadRequest)
-		return
-	}
->>>>>>> 26c8b7de4c5e871679f731c5fae00541067f0e31
 }
