@@ -4,6 +4,7 @@ import (
 	"errors"
 	"hot-coffee/internal/dal"
 	"hot-coffee/models"
+	"log"
 	"sort"
 	"strings"
 )
@@ -68,6 +69,7 @@ func (s *OrderService) UpdateOrder(updatedOrder models.Order, OrderID string) er
 			return errors.New("something wrong with your updated order")
 		}
 	}
+	log.Println("qwe")
 	return s.orderRepo.SaveUpdatedOrder(updatedOrder, OrderID)
 }
 

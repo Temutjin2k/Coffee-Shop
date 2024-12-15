@@ -69,10 +69,10 @@ func (repo *OrderRepository) SaveUpdatedOrder(updatedOrder models.Order, OrderID
 
 	queryUpdateOrder := `
 	update orders 
-	set CustomerName = $1, Status = $2
-	where ID = $3
+	set CustomerName = $1
+	where ID = $2
 	`
-	_, err = repo.db.Query(queryUpdateOrder, updatedOrder.CustomerName, updatedOrder.Status, updatedOrder.ID)
+	_, err = repo.db.Query(queryUpdateOrder, updatedOrder.CustomerName, OrderID)
 	if err != nil {
 		return err
 	}
@@ -80,7 +80,7 @@ func (repo *OrderRepository) SaveUpdatedOrder(updatedOrder models.Order, OrderID
 		queryUpdateOrderItems := `
 		update order_items set ProductID = $1, Quantity = $2 where OrderID = $3
 		`
-		_, err = repo.db.Query(queryUpdateOrderItems, v.ProductID, v.Quantity, updatedOrder.ID)
+		_, err = repo.db.Query(queryUpdateOrderItems, v.ProductID, v.Quantity, OrderID)
 		if err != nil {
 			return err
 		}
