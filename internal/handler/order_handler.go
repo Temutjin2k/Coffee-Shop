@@ -2,11 +2,13 @@ package handler
 
 import (
 	"encoding/json"
+	"fmt"
+	"log/slog"
+	"net/http"
+
 	"hot-coffee/internal/ErrorHandler"
 	"hot-coffee/internal/service"
 	"hot-coffee/models"
-	"log/slog"
-	"net/http"
 )
 
 type OrderHandler struct {
@@ -197,21 +199,20 @@ func (h *OrderHandler) CloseOrder(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(200)
 }
 
+/*
+		GET /orders/numberOfOrderedItems?startDate={startDate}&endDate={endDate}:
+		Returns a list of ordered items and their quantities for a specified time period.
+		If the startDate and endDate parameters are not provided, the endpoint should return data for the entire time span.
+		##### Parameters:
 
-/* 	
-	GET /orders/numberOfOrderedItems?startDate={startDate}&endDate={endDate}: 
-	Returns a list of ordered items and their quantities for a specified time period. 
-	If the startDate and endDate parameters are not provided, the endpoint should return data for the entire time span.
-	##### Parameters:
-
-    startDate (optional): The start date of the period in YYYY-MM-DD format.
-    endDate (optional): The end date of the period in YYYY-MM-DD format.
+	    startDate (optional): The start date of the period in YYYY-MM-DD format.
+	    endDate (optional): The end date of the period in YYYY-MM-DD format.
 */
-func (h *OrderHandler) GetNumberOfOrdered(w http.ResponseWriter, r *http.Request){
+func (h *OrderHandler) GetNumberOfOrdered(w http.ResponseWriter, r *http.Request) {
 	startDate := r.URL.Query().Get("startDate")
 	endDate := r.URL.Query().Get("endDate")
 	items, err := h.orderService.GetNumberOfItems(startDate, endDate)
-	if err != nil{
+	if err != nil {
 		h.logger.Error("Error getting number of ordered items", "query", r.URL.Query, "error", err)
 		ErrorHandler.Error(w, fmt.Sprintf("Error getting number of ordered items. Error:%v", err), http.StatusInternalServerError)
 		return
@@ -224,11 +225,10 @@ func (h *OrderHandler) GetNumberOfOrdered(w http.ResponseWriter, r *http.Request
 	}
 }
 
-/*  
-	POST /orders/batch-process: 
-	Process multiple orders simultaneously while ensuring inventory consistency. 
-	This endpoint must handle concurrent orders and maintain data integrity using transactions.
+/*
+POST /orders/batch-process:
+Process multiple orders simultaneously while ensuring inventory consistency.
+This endpoint must handle concurrent orders and maintain data integrity using transactions.
 */
-func (h *OrderHandler) PostOrders(w http.ResponseWriter, r *http.Request){
-
+func (h *OrderHandler) PostOrders(w http.ResponseWriter, r *http.Request) {
 }
