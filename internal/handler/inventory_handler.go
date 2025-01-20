@@ -2,11 +2,13 @@ package handler
 
 import (
 	"encoding/json"
+	"fmt"
+	"log/slog"
+	"net/http"
+
 	"hot-coffee/internal/ErrorHandler"
 	"hot-coffee/internal/service"
 	"hot-coffee/models"
-	"log/slog"
-	"net/http"
 )
 
 type InventoryHandler struct {
@@ -145,4 +147,38 @@ func (h *InventoryHandler) DeleteInventoryItem(w http.ResponseWriter, r *http.Re
 
 	w.WriteHeader(http.StatusNoContent)
 	h.logger.Info("Request handled successfully.", "method", r.Method, "url", r.URL)
+}
+
+/*
+		GET /inventory/getLeftOvers?sortBy={value}&page={page}&pageSize={pageSize}: Returns the inventory leftovers in the coffee shop, including sorting and pagination options.
+		##### Parameters:
+	    sortBy (optional): Determines the sorting method. Can be either:
+	        price: Sort by item price.
+	        quantity: Sort by item quantity.
+	    page (optional): Current page number, starting from 1.
+	    pageSize (optional): Number of items per page. Default value: 10.
+
+		##### Response:
+	    Includes:
+	        A list of leftovers sorted and paginated.
+	        currentPage: The current page number.
+	        hasNextPage: Boolean indicating whether there is a next page.
+	        totalPages: Total number of pages.
+*/
+func (h *InventoryHandler) GetLeftOvers(w http.ResponseWriter, r *http.Request) {
+	ParamSortBy := r.URL.Query().Get("sortBy")
+	ParamPage := r.URL.Query().Get("page")
+	ParamPageSize := r.URL.Query().Get("pageSize")
+
+	resp, err := h.inventoryService.GetLeftOvers(ParamSortBy, ParamPage, ParamPageSize)
+	if err != nil {
+		ErrorHandler.Error(w, fmt.Sprintf("Error %v", err), http.StatusBadRequest)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		h.logger.Error("Could not encode json data", "error", err, "method", r.Method, "url", r.URL)
+		ErrorHandler.Error(w, "Could not encode request json data", http.StatusInternalServerError)
+	}
 }

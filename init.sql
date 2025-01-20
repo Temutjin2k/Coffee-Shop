@@ -7,13 +7,9 @@ BEGIN
 END
 $$;
 
--- Connect to the frappuccino database
+CREATE TYPE order_status AS ENUM ('open', 'closed');
+CREATE TYPE unit_types AS ENUM ('ml', 'shots', 'g');
 
-
-
-
-
--- Create the orders table
 CREATE TABLE menu_items (
     ID SERIAL PRIMARY KEY,
     Name VARCHAR(50),
@@ -25,14 +21,14 @@ CREATE TABLE inventory (
     IngredientID SERIAL PRIMARY KEY,
     Name VARCHAR(50),
     Quantity INT,
-    Unit VARCHAR(10)
+    Unit unit_types
 );
 
 CREATE TABLE orders (
     ID SERIAL PRIMARY KEY,
     CustomerName VARCHAR(50),
-    Status VARCHAR(50),
-    CreatedAt DATE
+    Status order_status DEFAULT 'open',
+    CreatedAt TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE order_items (
@@ -64,7 +60,7 @@ CREATE TABLE menu_item_ingredients (
 CREATE TABLE order_status_history (
     ID SERIAL PRIMARY KEY,
     OrderID INT,
-    OpenedAt TIMESTAMP DEFAULT NOW(),
+    OpenedAt TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     ClosedAt TIMESTAMP,
     FOREIGN KEY (OrderID) REFERENCES orders(ID)
 );
@@ -74,7 +70,7 @@ CREATE TABLE inventory_transactions (
     Quantity INT,
     Menu_ItemID INT,
     OrderID INT,
-    CreatedAt TIMESTAMP DEFAULT NOW(),
+    CreatedAt TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     UpdatedAt TIMESTAMP,
     DeletedAt TIMESTAMP,
     PRIMARY KEY (IngredientID, Menu_ItemID, OrderID, CreatedAt),
@@ -83,9 +79,5 @@ CREATE TABLE inventory_transactions (
     FOREIGN KEY (OrderID) REFERENCES orders(ID)
 );
 
-
-
--- Insert into menu_items (Name, Description, Price, Field) values
--- ("Espresso", "Heavy shot of coffee", 5.99, "Idk what to write");
 
 \c frappuccino;

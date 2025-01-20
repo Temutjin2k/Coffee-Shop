@@ -1,7 +1,7 @@
 package models
 
 type Order struct {
-	ID           string      `json:"order_id"`
+	ID           int         `json:"order_id"`
 	CustomerName string      `json:"customer_name"`
 	Items        []OrderItem `json:"items"`
 	Status       string      `json:"status"`
@@ -11,4 +11,8 @@ type Order struct {
 type OrderItem struct {
 	ProductID string `json:"product_id"`
 	Quantity  int    `json:"quantity"`
+}
+
+type BatchOrders struct {
+	Orders []Order `json:"orders"`
 }

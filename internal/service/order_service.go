@@ -2,11 +2,13 @@ package service
 
 import (
 	"errors"
-	"hot-coffee/internal/dal"
-	"hot-coffee/models"
+	"fmt"
 	"sort"
 	"strings"
 	"time"
+
+	"hot-coffee/internal/dal"
+	"hot-coffee/models"
 )
 
 type OrderService struct {
@@ -32,14 +34,6 @@ func (s *OrderService) AddOrder(order models.Order) error {
 		}
 	}
 
-	Location, err := time.LoadLocation("Asia/Aqtau")
-	if err != nil {
-		return err
-	}
-	timenow := time.Now().In(Location).Format(time.RFC3339)
-	order.CreatedAt = timenow
-	order.Status = "open"
-
 	return s.orderRepo.Add(order)
 }
 
@@ -48,7 +42,7 @@ func (s *OrderService) GetAllOrders() ([]models.Order, error) {
 	return s.orderRepo.GetAll()
 }
 
-func (s *OrderService) GetOrder(OrderID string) (models.Order, error) {
+func (s *OrderService) GetOrder(OrderID int) (models.Order, error) {
 	flag := false
 	AllOrders, err := s.orderRepo.GetAll()
 	if err != nil {
@@ -131,7 +125,7 @@ func (s *OrderService) GetPopularItems(popularItemsNum int) (models.PopularItems
 	return popularItems, nil
 }
 
-func (s *OrderService) DeleteOrderByID(OrderID string) error {
+func (s *OrderService) DeleteOrderByID(OrderID int) error {
 	Orders, err := s.GetAllOrders()
 	if err != nil {
 		return err
@@ -159,4 +153,17 @@ func (s *OrderService) DeleteOrderByID(OrderID string) error {
 
 func (s *OrderService) CloseOrder(OrderID string) error {
 	return s.orderRepo.CloseOrderRepo(OrderID)
+}
+
+func (s *OrderService) GetNumberOfItems(startDate, endDate string) (map[string]int, error) {
+	start, err := time.Parse("2006-01-02", startDate)
+	if err != nil {
+		return nil, fmt.Errorf("invalid time format of startDate")
+	}
+	end, err := time.Parse("2006-01-02", endDate)
+	if err != nil {
+		return nil, fmt.Errorf("invalid time format of endDate")
+	}
+
+	return s.orderRepo.GetNumberOfItems(start, end)
 }

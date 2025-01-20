@@ -2,11 +2,14 @@ package handler
 
 import (
 	"encoding/json"
+	"fmt"
+	"log/slog"
+	"net/http"
+	"strconv"
+
 	"hot-coffee/internal/ErrorHandler"
 	"hot-coffee/internal/service"
 	"hot-coffee/models"
-	"log/slog"
-	"net/http"
 )
 
 type OrderHandler struct {
@@ -79,7 +82,13 @@ func (h *OrderHandler) GetOrders(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *OrderHandler) GetOrder(w http.ResponseWriter, r *http.Request) {
-	RequestedOrder, err := h.orderService.GetOrder(r.PathValue("id"))
+	ID, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		ErrorHandler.Error(w, "The id should be positive integer", http.StatusBadRequest)
+		h.logger.Error("The id should be positive integer", "method", r.Method, "url", r.URL)
+		return
+	}
+	RequestedOrder, err := h.orderService.GetOrder(ID)
 	if err != nil {
 		if err.Error() == "the order with given ID soes not exist" {
 			h.logger.Error(err.Error(), "error", err, "method", r.Method, "url", r.URL)
@@ -140,7 +149,13 @@ func (h *OrderHandler) PutOrder(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *OrderHandler) DeleteOrder(w http.ResponseWriter, r *http.Request) {
-	err := h.orderService.DeleteOrderByID(r.PathValue("id"))
+	ID, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		ErrorHandler.Error(w, "The id should be positive integer", http.StatusBadRequest)
+		h.logger.Error("The id should be positive integer", "method", r.Method, "url", r.URL)
+		return
+	}
+	err = h.orderService.DeleteOrderByID(ID)
 	if err != nil {
 		if err.Error() == "the order with given ID does not exist" {
 			h.logger.Error(err.Error(), "error", err, "method", r.Method, "url", r.URL)
@@ -157,7 +172,13 @@ func (h *OrderHandler) DeleteOrder(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *OrderHandler) CloseOrder(w http.ResponseWriter, r *http.Request) {
-	Order, err := h.orderService.GetOrder(r.PathValue("id"))
+	ID, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		ErrorHandler.Error(w, "The id should be positive integer", http.StatusBadRequest)
+		h.logger.Error("The id should be positive integer", "method", r.Method, "url", r.URL)
+		return
+	}
+	Order, err := h.orderService.GetOrder(ID)
 	if Order.Status == "closed" {
 		ErrorHandler.Error(w, "The order is already closed", http.StatusBadRequest)
 		h.logger.Error("The order is already closed", "method", r.Method, "url", r.URL)
@@ -195,4 +216,38 @@ func (h *OrderHandler) CloseOrder(w http.ResponseWriter, r *http.Request) {
 	}
 	h.logger.Info("Request handled successfully.", "method", r.Method, "url", r.URL)
 	w.WriteHeader(200)
+}
+
+/*
+		GET /orders/numberOfOrderedItems?startDate={startDate}&endDate={endDate}:
+		Returns a list of ordered items and their quantities for a specified time period.
+		If the startDate and endDate parameters are not provided, the endpoint should return data for the entire time span.
+		##### Parameters:
+
+	    startDate (optional): The start date of the period in YYYY-MM-DD format.
+	    endDate (optional): The end date of the period in YYYY-MM-DD format.
+*/
+func (h *OrderHandler) GetNumberOfOrdered(w http.ResponseWriter, r *http.Request) {
+	startDate := r.URL.Query().Get("startDate")
+	endDate := r.URL.Query().Get("endDate")
+	items, err := h.orderService.GetNumberOfItems(startDate, endDate)
+	if err != nil {
+		h.logger.Error("Error getting number of ordered items", "query", r.URL.Query, "error", err)
+		ErrorHandler.Error(w, fmt.Sprintf("Error getting number of ordered items. Error:%v", err), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(items); err != nil {
+		h.logger.Error("Could not encode json data", "error", err, "method", r.Method, "url", r.URL)
+		ErrorHandler.Error(w, "Could not encode request json data", http.StatusInternalServerError)
+	}
+}
+
+/*
+POST /orders/batch-process:
+Process multiple orders simultaneously while ensuring inventory consistency.
+This endpoint must handle concurrent orders and maintain data integrity using transactions.
+*/
+func (h *OrderHandler) BatchOrders(w http.ResponseWriter, r *http.Request) {
 }
