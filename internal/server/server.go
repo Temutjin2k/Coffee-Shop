@@ -38,11 +38,10 @@ func ServerLaunch(db *sql.DB, logger *slog.Logger) {
 	mux.HandleFunc("DELETE /orders/{id}", orderHandler.DeleteOrder)
 	mux.HandleFunc("POST /orders/{id}/close", orderHandler.CloseOrder)
 
-	// TODO
-	mux.HandleFunc("POST /orders/batch-process", orderHandler.BatchOrders)
+	mux.HandleFunc("GET /orders/numberOfOrderedItems", orderHandler.GetNumberOfOrdered)
 
 	// TODO
-	mux.HandleFunc("GET /orders/numberOfOrderedItems", orderHandler.GetNumberOfOrdered)
+	mux.HandleFunc("POST /orders/batch-process", orderHandler.BatchOrders)
 
 	mux.HandleFunc("POST /menu", menuHandler.PostMenu)
 	mux.HandleFunc("GET /menu", menuHandler.GetMenu)
@@ -63,7 +62,6 @@ func ServerLaunch(db *sql.DB, logger *slog.Logger) {
 	mux.HandleFunc("GET /reports/search", reportHandler.SearchHandler)
 
 	// TOOD
-	mux.HandleFunc("GET /reports/search", reportHandler.Search)
 	mux.HandleFunc("GET /reports/orderedItemsByPeriod", reportHandler.OrderByPeriod)
 
 	logger.Info("Application started", "Address", "http://localhost:8080/")

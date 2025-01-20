@@ -1,0 +1,20 @@
+2 handlers TODO brat ostalos
+
+
+3. Ordered items by period
+GET /reports/orderedItemsByPeriod?period={day|month}&month={month}: Returns the number of orders for the specified period, grouped by day within a month or by month within a year. The period parameter can take the value day or month. The month parameter is optional and used only when period=day.
+Parameters:
+
+    period (required):
+        day: Groups data by day within the specified month.
+        month: Groups data by month within the specified year.
+    month (optional): Specifies the month (e.g., october). Used only if period=day.
+    year (optional): Specifies the year. Used only if period=month.
+
+
+5. Bulk Order Processing
+/*
+POST /orders/batch-process:
+Process multiple orders simultaneously while ensuring inventory consistency.
+This endpoint must handle concurrent orders and maintain data integrity using transactions.
+*/

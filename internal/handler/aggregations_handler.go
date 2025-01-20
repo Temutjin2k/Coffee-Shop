@@ -53,6 +53,20 @@ func (h *AggregationHandler) PopularItemsHandler(w http.ResponseWriter, r *http.
 	h.logger.Info("Request handled successfully.", "method", r.Method, "url", r.URL)
 }
 
+/*
+	2
+	GET /reports/search: Search through orders, menu items, and customers with partial matching and ranking.
+	##### Parameters:
+
+		q (required): Search query string
+		filter (optional): What to search through, can be multiple values comma-separated:
+			orders (search in customer names and order details)
+			menu (search in item names and descriptions)
+			all (default, search everywhere)
+		minPrice (optional): Minimum order/item price to include
+		maxPrice (optional): Maximum order/item price to include
+*/
+
 func (h *AggregationHandler) SearchHandler(w http.ResponseWriter, r *http.Request) {
 	querySrting := r.URL.Query().Get("q")
 	filter := r.URL.Query().Get("filter")
@@ -112,23 +126,6 @@ func (h *AggregationHandler) SearchHandler(w http.ResponseWriter, r *http.Reques
 		ErrorHandler.Error(w, "Can not searched", http.StatusInternalServerError)
 		return
 	}
-}
-
-/*
-	2
-	GET /reports/search: Search through orders, menu items, and customers with partial matching and ranking.
-	##### Parameters:
-
-		q (required): Search query string
-		filter (optional): What to search through, can be multiple values comma-separated:
-			orders (search in customer names and order details)
-			menu (search in item names and descriptions)
-			all (default, search everywhere)
-		minPrice (optional): Minimum order/item price to include
-		maxPrice (optional): Maximum order/item price to include
-*/
-
-func (h *AggregationHandler) Search(w http.ResponseWriter, r *http.Request) {
 }
 
 /*
