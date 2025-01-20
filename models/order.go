@@ -1,11 +1,12 @@
 package models
 
 type Order struct {
-	ID           int         `json:"order_id"`
-	CustomerName string      `json:"customer_name"`
-	Items        []OrderItem `json:"items"`
-	Status       string      `json:"status"`
-	CreatedAt    string      `json:"created_at"`
+	ID           int                    `json:"order_id"`
+	CustomerName string                 `json:"customer_name"`
+	Items        []OrderItem            `json:"items"`
+	Status       string                 `json:"status"`
+	Notes        map[string]interface{} `json:"notes"`
+	CreatedAt    string                 `json:"created_at"`
 }
 
 type OrderItem struct {

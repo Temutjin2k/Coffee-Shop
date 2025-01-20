@@ -2,7 +2,6 @@ package server
 
 import (
 	"database/sql"
-	"hot-coffee/internal/config"
 	"hot-coffee/internal/dal"
 	"hot-coffee/internal/handler"
 	"hot-coffee/internal/service"
@@ -12,7 +11,7 @@ import (
 )
 
 func ServerLaunch(db *sql.DB, logger *slog.Logger) {
-	config.InitDB(db)
+	// config.InitDB(db)
 	orderRepo := dal.NewOrderRepository(db)
 	menuRepo := dal.NewMenuRepository(db)
 	inventoryRepo := dal.NewInventoryRepository(db)
