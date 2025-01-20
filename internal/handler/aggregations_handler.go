@@ -6,6 +6,8 @@ import (
 	"hot-coffee/internal/service"
 	"log/slog"
 	"net/http"
+	"strconv"
+	"strings"
 )
 
 type AggregationHandler struct {
@@ -49,6 +51,67 @@ func (h *AggregationHandler) PopularItemsHandler(w http.ResponseWriter, r *http.
 	json.NewEncoder(w).Encode(popularItems)
 
 	h.logger.Info("Request handled successfully.", "method", r.Method, "url", r.URL)
+}
+
+func (h *AggregationHandler) SearchHandler(w http.ResponseWriter, r *http.Request) {
+	querySrting := r.URL.Query().Get("q")
+	filter := r.URL.Query().Get("filter")
+	minPrice := r.URL.Query().Get("minPrice")
+	maxPrice := r.URL.Query().Get("maxPrice")
+	if querySrting == "" {
+		h.logger.Error("Search query string is required", "method", r.Method, "url", r.URL)
+		ErrorHandler.Error(w, "Search query string is required", http.StatusBadRequest)
+		return
+	}
+	var args []string
+	if filter != "" {
+		args = strings.Split(filter, ",")
+	}
+	for _, v := range args {
+		if v != "orders" && v != "menu" && v != "inventory" && v != "all" {
+			h.logger.Error("Incorrect search arguments", "method", r.Method, "url", r.URL)
+			ErrorHandler.Error(w, "Incorrect search arguments", http.StatusBadRequest)
+			return
+		}
+	}
+	var MinPrice int
+	if minPrice != "" {
+		MinPriceTemp, err := strconv.Atoi(minPrice)
+		if err != nil {
+			h.logger.Error("Min Price should be number", "method", r.Method, "url", r.URL)
+			ErrorHandler.Error(w, "Min Price should be number", http.StatusBadRequest)
+			return
+		}
+		MinPrice = MinPriceTemp
+	} else {
+		MinPrice = 0
+	}
+
+	var MaxPrice int
+	if minPrice != "" {
+		MaxPriceTemp, err := strconv.Atoi(minPrice)
+		if err != nil {
+			h.logger.Error("Max Price should be number", "method", r.Method, "url", r.URL)
+			ErrorHandler.Error(w, "Max Price should be number", http.StatusBadRequest)
+			return
+		}
+		MinPrice = MaxPriceTemp
+	} else {
+		MaxPrice = 999999
+	}
+
+	MaxPrice, err := strconv.Atoi(maxPrice)
+	if err != nil {
+		h.logger.Error("Max Price should be number", "method", r.Method, "url", r.URL)
+		ErrorHandler.Error(w, "Max Price should be number", http.StatusBadRequest)
+		return
+	}
+	err = h.orderService.SearchService(MinPrice, MaxPrice, args, querySrting)
+	if err != nil {
+		h.logger.Error(err.Error(), "method", r.Method, "url", r.URL)
+		ErrorHandler.Error(w, "Can not searched", http.StatusInternalServerError)
+		return
+	}
 }
 
 /*

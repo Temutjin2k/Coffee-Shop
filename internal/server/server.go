@@ -18,7 +18,7 @@ func ServerLaunch(db *sql.DB, logger *slog.Logger) {
 	inventoryRepo := dal.NewInventoryRepository(db)
 
 	// Initialize services (Business Logic Layer)
-	orderService := service.NewOrderService(*orderRepo, *menuRepo)
+	orderService := service.NewOrderService(*orderRepo, *menuRepo, *inventoryRepo)
 	menuService := service.NewMenuService(*menuRepo, *inventoryRepo)
 	inventoryService := service.NewInventoryService(*inventoryRepo)
 
@@ -60,6 +60,7 @@ func ServerLaunch(db *sql.DB, logger *slog.Logger) {
 
 	mux.HandleFunc("GET /reports/total-sales", reportHandler.TotalSalesHandler)
 	mux.HandleFunc("GET /reports/popular-items", reportHandler.PopularItemsHandler)
+	mux.HandleFunc("GET /reports/search", reportHandler.SearchHandler)
 
 	// TOOD
 	mux.HandleFunc("GET /reports/search", reportHandler.Search)

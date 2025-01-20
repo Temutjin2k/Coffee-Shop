@@ -3,23 +3,25 @@ package service
 import (
 	"errors"
 	"fmt"
+	"hot-coffee/internal/dal"
+	"hot-coffee/models"
+	"log"
 	"sort"
 	"strings"
 	"time"
-
-	"hot-coffee/internal/dal"
-	"hot-coffee/models"
 )
 
 type OrderService struct {
-	orderRepo dal.OrderRepository
-	menuRepo  dal.MenuRepository
+	orderRepo     dal.OrderRepository
+	menuRepo      dal.MenuRepository
+	inventoryRepo dal.InventoryRepository
 }
 
-func NewOrderService(orderRepo dal.OrderRepository, menuRepo dal.MenuRepository) *OrderService {
+func NewOrderService(orderRepo dal.OrderRepository, menuRepo dal.MenuRepository, inventoryRepo dal.InventoryRepository) *OrderService {
 	return &OrderService{
-		orderRepo: orderRepo,
-		menuRepo:  menuRepo,
+		orderRepo:     orderRepo,
+		menuRepo:      menuRepo,
+		inventoryRepo: inventoryRepo,
 	}
 }
 
@@ -160,10 +162,16 @@ func (s *OrderService) GetNumberOfItems(startDate, endDate string) (map[string]i
 	if err != nil {
 		return nil, fmt.Errorf("invalid time format of startDate")
 	}
+	log.Println(start)
 	end, err := time.Parse("2006-01-02", endDate)
 	if err != nil {
 		return nil, fmt.Errorf("invalid time format of endDate")
 	}
+	log.Println(end)
 
 	return s.orderRepo.GetNumberOfItems(start, end)
+}
+
+func (s *OrderService) SearchService(minPrice, maxPrice int, args []string, querySrting string) error {
+	return nil
 }

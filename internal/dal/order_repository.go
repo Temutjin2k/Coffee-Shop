@@ -4,10 +4,9 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"hot-coffee/models"
 	"log"
 	"time"
-
-	"hot-coffee/models"
 )
 
 // OrderRepository implements OrderRepository using JSON files
@@ -199,7 +198,7 @@ func (repo *OrderRepository) GetNumberOfItems(startDate, endDate time.Time) (map
 		LEFT JOIN
 			orders o ON oi.OrderID = o.ID
 		WHERE
-			o.CreatedAt BETWEEN $1 AND $2
+			(o.CreatedAt BETWEEN $1 AND $2) AND o.Status = 'closed'
 		GROUP BY
 			m.Name
 		ORDER BY
@@ -232,4 +231,14 @@ func (repo *OrderRepository) GetNumberOfItems(startDate, endDate time.Time) (map
 	}
 
 	return result, nil
+}
+
+func (repo *OrderRepository) GetEarliestDate() string {
+	query := `
+	select min(CreatedAt) from orders
+	`
+	row, _ := repo.db.Query(query)
+	var Date string
+	row.Scan(&Date)
+	return Date
 }
