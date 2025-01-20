@@ -2,14 +2,13 @@ package server
 
 import (
 	"database/sql"
-	"log"
-	"log/slog"
-	"net/http"
-
 	"hot-coffee/internal/config"
 	"hot-coffee/internal/dal"
 	"hot-coffee/internal/handler"
 	"hot-coffee/internal/service"
+	"log"
+	"log/slog"
+	"net/http"
 )
 
 func ServerLaunch(db *sql.DB, logger *slog.Logger) {
@@ -38,11 +37,12 @@ func ServerLaunch(db *sql.DB, logger *slog.Logger) {
 	mux.HandleFunc("PUT /orders/{id}", orderHandler.PutOrder)
 	mux.HandleFunc("DELETE /orders/{id}", orderHandler.DeleteOrder)
 	mux.HandleFunc("POST /orders/{id}/close", orderHandler.CloseOrder)
-	mux.HandleFunc("POST /orders/batch-process", orderHandler.PostOrders)
+
+	// TODO
+	mux.HandleFunc("POST /orders/batch-process", orderHandler.BatchOrders)
 
 	// TODO
 	mux.HandleFunc("GET /orders/numberOfOrderedItems", orderHandler.GetNumberOfOrdered)
-	// mux.HandleFunc("POST /orders/batch-process", nil)
 
 	mux.HandleFunc("POST /menu", menuHandler.PostMenu)
 	mux.HandleFunc("GET /menu", menuHandler.GetMenu)
@@ -56,14 +56,15 @@ func ServerLaunch(db *sql.DB, logger *slog.Logger) {
 	mux.HandleFunc("PUT /inventory/{id}", inventoryHandler.PutInventoryItem)
 	mux.HandleFunc("DELETE /inventory/{id}", inventoryHandler.DeleteInventoryItem)
 
-	// TODO
 	mux.HandleFunc("GET /inventory/getLeftOvers", inventoryHandler.GetLeftOvers)
 
 	mux.HandleFunc("GET /reports/total-sales", reportHandler.TotalSalesHandler)
 	mux.HandleFunc("GET /reports/popular-items", reportHandler.PopularItemsHandler)
 
-	address := "http://localhost:8080/"
+	// TOOD
+	mux.HandleFunc("GET /reports/search", reportHandler.Search)
+	mux.HandleFunc("GET /reports/orderedItemsByPeriod", reportHandler.OrderByPeriod)
 
-	logger.Info("Application started", "Address", address)
+	logger.Info("Application started", "Address", "http://localhost:8080/")
 	log.Fatal(http.ListenAndServe(":8080", mux))
 }

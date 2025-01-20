@@ -51,8 +51,8 @@ func (h *AggregationHandler) PopularItemsHandler(w http.ResponseWriter, r *http.
 	h.logger.Info("Request handled successfully.", "method", r.Method, "url", r.URL)
 }
 
-
 /*
+	2
 	GET /reports/search: Search through orders, menu items, and customers with partial matching and ranking.
 	##### Parameters:
 
@@ -62,16 +62,23 @@ func (h *AggregationHandler) PopularItemsHandler(w http.ResponseWriter, r *http.
 			menu (search in item names and descriptions)
 			all (default, search everywhere)
 		minPrice (optional): Minimum order/item price to include
-		maxPrice (optional): Maximum order/item price to include 
+		maxPrice (optional): Maximum order/item price to include
 */
+
+func (h *AggregationHandler) Search(w http.ResponseWriter, r *http.Request) {
+}
 
 /*
+	3
 	GET /reports/orderedItemsByPeriod?period={day|month}&month={month}: Returns the number of orders for the specified period, grouped by day within a month or by month within a year. The period parameter can take the value day or month. The month parameter is optional and used only when period=day.
+
 ##### Parameters:
 
-    period (required):
-        day: Groups data by day within the specified month.
-        month: Groups data by month within the specified year.
-    month (optional): Specifies the month (e.g., october). Used only if period=day.
-    year (optional): Specifies the year. Used only if period=month.
+	period (required):
+	    day: Groups data by day within the specified month.
+	    month: Groups data by month within the specified year.
+	month (optional): Specifies the month (e.g., october). Used only if period=day.
+	year (optional): Specifies the year. Used only if period=month.
 */
+func (h *AggregationHandler) OrderByPeriod(w http.ResponseWriter, r *http.Request) {
+}

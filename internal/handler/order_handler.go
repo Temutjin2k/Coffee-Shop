@@ -249,5 +249,5 @@ POST /orders/batch-process:
 Process multiple orders simultaneously while ensuring inventory consistency.
 This endpoint must handle concurrent orders and maintain data integrity using transactions.
 */
-func (h *OrderHandler) PostOrders(w http.ResponseWriter, r *http.Request) {
+func (h *OrderHandler) BatchOrders(w http.ResponseWriter, r *http.Request) {
 }
