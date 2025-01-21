@@ -28,7 +28,7 @@ func main() {
 	err = db.Ping()
 	// Если ошибка подключения, пробуем несколько раз
 	if err != nil {
-		logger.Error("Error connecting to database: %v", err)
+		logger.Error(fmt.Sprintf("Error connecting to database: %v", err))
 
 		// Пробуем подключиться до 5 раз с интервалом в 5 секунд
 		for i := 0; i < 5; i++ {
