@@ -12,21 +12,21 @@ CREATE TYPE unit_types AS ENUM ('ml', 'shots', 'g');
 
 CREATE TABLE menu_items (
     ID SERIAL PRIMARY KEY,
-    Name VARCHAR(50),
-    Description TEXT,
-    Price NUMERIC(10, 2)
+    Name VARCHAR(50) NOT NULL,
+    Description TEXT NOT NULL,
+    Price NUMERIC(10, 2) NOT NULL CHECK(Price > 0)
 );
 
 CREATE TABLE inventory (
     IngredientID SERIAL PRIMARY KEY,
-    Name VARCHAR(50),
-    Quantity INT,
-    Unit unit_types
+    Name VARCHAR(50) NOT NULL,
+    Quantity INT NOT NULL,
+    Unit unit_types NOT NULL
 );
 
 CREATE TABLE orders (
     ID SERIAL PRIMARY KEY,
-    CustomerName VARCHAR(50),
+    CustomerName VARCHAR(50) NOT NULL,
     Status order_status DEFAULT 'open',
     Notes JSONB, -- To store special client's wish
     CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -34,25 +34,26 @@ CREATE TABLE orders (
 
 CREATE TABLE order_items (
     OrderID INT,
-    ProductID INT,
-    Quantity INT,
+    ProductID INT NOT NULL,
+    Quantity INT NOT NULL CHECK(Quantity > 0),
     PRIMARY KEY (OrderID, ProductID),
     FOREIGN KEY (OrderID) REFERENCES orders(ID),
     FOREIGN KEY (ProductID) REFERENCES menu_items(ID)
 );
 
 CREATE TABLE price_history (
-    Menu_ItemID INT,
-    Price NUMERIC(10, 2),
-    Date DATE,
-    PRIMARY KEY (Menu_ItemID, Date),
+    HistoryID SERIAL PRIMARY KEY
+    Menu_ItemID INT NOT NULL,
+    old_price NUMERIC(10, 2) NOT NULL CHECK(old_price > 0),
+    new_price NUMERIC(10, 2) NOT NULL CHECK(new_price > 0),
+    ChangedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (Menu_ItemID) REFERENCES menu_items(ID)
 );
 
 CREATE TABLE menu_item_ingredients (
     MenuID INT,
-    IngredientID INT,
-    Quantity INT,
+    IngredientID INT NOT NULL,
+    Quantity INT NOT NULL CHECK(Quantity > 0),
     PRIMARY KEY (MenuID, IngredientID),
     FOREIGN KEY (MenuID) REFERENCES menu_items(ID) ON DELETE CASCADE,
     FOREIGN KEY (IngredientID) REFERENCES inventory(IngredientID)
@@ -60,7 +61,7 @@ CREATE TABLE menu_item_ingredients (
 
 CREATE TABLE order_status_history (
     ID SERIAL PRIMARY KEY,
-    OrderID INT,
+    OrderID INT NOT NULL,
     OpenedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     ClosedAt TIMESTAMP,
     FOREIGN KEY (OrderID) REFERENCES orders(ID)
@@ -74,37 +75,33 @@ CREATE TABLE inventory_transactions (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Индексы для таблицы menu_items
+-- menu_items
 CREATE INDEX idx_menu_items_name ON menu_items (Name);
 
--- Индексы для таблицы inventory
+-- inventory
 CREATE INDEX idx_inventory_name ON inventory (Name);
 
--- Индексы для таблицы orders
+-- orders
 CREATE INDEX idx_orders_customer_name ON orders (CustomerName);
 CREATE INDEX idx_orders_status ON orders (Status);
 CREATE INDEX idx_orders_created_at ON orders (CreatedAt);
 
--- Индексы для таблицы order_items
+-- order_items
 CREATE INDEX idx_order_items_order_id ON order_items (OrderID);
 CREATE INDEX idx_order_items_product_id ON order_items (ProductID);
 
--- Индексы для таблицы price_history
+-- price_history
 CREATE INDEX idx_price_history_menu_item_id ON price_history (Menu_ItemID);
-CREATE INDEX idx_price_history_date ON price_history (Date);
 
--- Индексы для таблицы menu_item_ingredients
+-- menu_item_ingredients
 CREATE INDEX idx_menu_item_ingredients_menu_id ON menu_item_ingredients (MenuID);
 CREATE INDEX idx_menu_item_ingredients_ingredient_id ON menu_item_ingredients (IngredientID);
 
--- Индексы для таблицы order_status_history
+-- order_status_history
 CREATE INDEX idx_order_status_history_order_id ON order_status_history (OrderID);
 
--- Индексы для таблицы inventory_transactions
+-- inventory_transactions
 CREATE INDEX idx_inventory_transactions_ingredient_id ON inventory_transactions (IngredientID);
-CREATE INDEX idx_inventory_transactions_created_at ON inventory_transactions (created_at);
-
-
 
 
 -- Функция для логирования изменения цены в price_history
@@ -112,8 +109,8 @@ CREATE OR REPLACE FUNCTION log_price_change()
 RETURNS TRIGGER AS $$
 BEGIN
     IF NEW.price <> OLD.price THEN
-        INSERT INTO price_history (Menu_ItemID, Price, Date)
-        VALUES (OLD.ID, OLD.price, CURRENT_DATE);
+        INSERT INTO price_history (Menu_ItemID, old_price, new_price, ChangedAt)
+        VALUES (OLD.ID,  OLD.price, NEW.price, CURRENT_TIMESTAMP);
     END IF;
     RETURN NEW;
 END;
@@ -141,54 +138,6 @@ AFTER UPDATE ON orders
 FOR EACH ROW
 EXECUTE FUNCTION log_order_status_change();
 
--- Функция для проверки отрицательных значений в inventory
-CREATE OR REPLACE FUNCTION check_inventory_quantity()
-RETURNS TRIGGER AS $$
-BEGIN
-    IF NEW.quantity < 0 THEN
-        RAISE EXCEPTION 'Quantity in inventory cannot be negative';
-    END IF;
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER prevent_negative_inventory
-BEFORE INSERT OR UPDATE ON inventory
-FOR EACH ROW
-EXECUTE FUNCTION check_inventory_quantity();
-
--- Функция для проверки отрицательных цен в menu_items
-CREATE OR REPLACE FUNCTION check_menu_item_price()
-RETURNS TRIGGER AS $$
-BEGIN
-    IF NEW.price <= 0 THEN
-        RAISE EXCEPTION 'Price of menu item must be greater than zero';
-    END IF;
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER prevent_negative_price
-BEFORE INSERT OR UPDATE ON menu_items
-FOR EACH ROW
-EXECUTE FUNCTION check_menu_item_price();
-
--- Функция для проверки нулевого количества в order_items
-CREATE OR REPLACE FUNCTION check_order_item_quantity()
-RETURNS TRIGGER AS $$
-BEGIN
-    IF NEW.quantity <= 0 THEN
-        RAISE EXCEPTION 'Order item quantity must be greater than zero';
-    END IF;
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER prevent_zero_quantity
-BEFORE INSERT OR UPDATE ON order_items
-FOR EACH ROW
-EXECUTE FUNCTION check_order_item_quantity();
-
 --Автоматическое логирование в inventory_transactions.
 CREATE OR REPLACE FUNCTION log_inventory_transaction()
 RETURNS TRIGGER AS $$
@@ -196,9 +145,9 @@ BEGIN
 
     IF TG_OP = 'UPDATE' THEN
         IF NEW.quantity <> OLD.quantity THEN
-            INSERT INTO inventory_transactions(ingredientId, quantity_change, reason, created_at)
+            INSERT INTO inventory_transactions(IngredientID, quantity_change, reason, created_at)
             VALUES (
-                OLD.ingredientId,
+                OLD.IngredientID,
                 NEW.quantity - OLD.quantity,
                 'Inventory adjustment',
                 CURRENT_TIMESTAMP
@@ -206,9 +155,9 @@ BEGIN
         END IF;
 
     ELSIF TG_OP = 'INSERT' THEN
-        INSERT INTO inventory_transactions(ingredientId, quantity_change, reason, created_at)
+        INSERT INTO inventory_transactions(IngredientID, quantity_change, reason, created_at)
         VALUES (
-            NEW.ingredientId,
+            NEW.IngredientID,
             NEW.quantity,
             'Initial stock',
             CURRENT_TIMESTAMP
