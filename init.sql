@@ -42,7 +42,7 @@ CREATE TABLE order_items (
 );
 
 CREATE TABLE price_history (
-    HistoryID SERIAL PRIMARY KEY
+    HistoryID SERIAL PRIMARY KEY,
     Menu_ItemID INT NOT NULL,
     old_price NUMERIC(10, 2) NOT NULL CHECK(old_price > 0),
     new_price NUMERIC(10, 2) NOT NULL CHECK(new_price > 0),
