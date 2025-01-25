@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -124,7 +125,7 @@ func (h *AggregationHandler) SearchHandler(w http.ResponseWriter, r *http.Reques
 	err = h.orderService.SearchService(MinPrice, MaxPrice, args, querySrting)
 	if err != nil {
 		h.logger.Error(err.Error(), "method", r.Method, "url", r.URL)
-		ErrorHandler.Error(w, "Can not searched", http.StatusInternalServerError)
+		ErrorHandler.Error(w, "Cannot searched", http.StatusInternalServerError)
 		return
 	}
 }
@@ -142,4 +143,22 @@ func (h *AggregationHandler) SearchHandler(w http.ResponseWriter, r *http.Reques
 	year (optional): Specifies the year. Used only if period=month.
 */
 func (h *AggregationHandler) OrderByPeriod(w http.ResponseWriter, r *http.Request) {
+	period := r.URL.Query().Get("period")
+	month := r.URL.Query().Get("month")
+	year := r.URL.Query().Get("year")
+
+	orders, err := h.orderService.GetOrderedItemsByPeriod(period, month, year)
+	if err != nil {
+		h.logger.Error(err.Error(), "msg", "Error getting orders by time period", "url", r.URL)
+		ErrorHandler.Error(w, fmt.Sprintf("Error getting orders by time period. %v", err), http.StatusBadRequest)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	err = json.NewEncoder(w).Encode(orders)
+	if err != nil {
+		h.logger.Error(err.Error(), "msg", "Failed to encode orders", "url", r.URL)
+		ErrorHandler.Error(w, "Failed to encode orders", http.StatusInternalServerError)
+		return
+	}
 }

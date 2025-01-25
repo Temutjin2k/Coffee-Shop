@@ -272,3 +272,67 @@ func (repo *OrderRepository) GetEarliestDate() string {
 	row.Scan(&Date)
 	return Date
 }
+
+// Returns the number of orders for the specified period, grouped by day within a month.
+// month from 1 to 12. Year as year.
+func (repo *OrderRepository) OrderedItemsByDay(month, year int) (map[string]interface{}, error) {
+	query := `
+		SELECT EXTRACT(DAY FROM createdat) AS day, COUNT(*) AS order_count
+		FROM orders
+		WHERE EXTRACT(MONTH FROM createdat) = $1 `
+
+	if year != -1 {
+		query += `AND EXTRACT(YEAR FROM createdat) = $2 `
+	}
+	query += `GROUP BY day ORDER BY day`
+
+	var rows *sql.Rows
+	var err error
+
+	if year != -1 {
+		rows, err = repo.db.Query(query, month, year)
+	} else {
+		rows, err = repo.db.Query(query, month)
+	}
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch ordered items by day: %w", err)
+	}
+
+	defer rows.Close()
+
+	orderedItems := make([]map[string]int, 0)
+	for rows.Next() {
+		var day int
+		var orderCount int
+		if err := rows.Scan(&day, &orderCount); err != nil {
+			return nil, fmt.Errorf("failed to scan row: %w", err)
+		}
+
+		orderedItems = append(orderedItems, map[string]int{fmt.Sprintf("%d", day): orderCount})
+	}
+
+	var result map[string]interface{}
+	if year != -1 {
+		result = map[string]interface{}{
+			"period":       "day",
+			"month":        month,
+			"year":         year,
+			"orderedItems": orderedItems,
+		}
+	} else {
+		result = map[string]interface{}{
+			"period":       "day",
+			"month":        month,
+			"orderedItems": orderedItems,
+		}
+	}
+
+	return result, nil
+}
+
+// Returns the number of orders for the specified period, grouped by month within a year
+
+func (repo *OrderRepository) OrderedItemsByMonth(year string) (map[string]interface{}, error) {
+	return nil, nil
+}

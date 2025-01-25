@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -155,6 +156,67 @@ func (s *OrderService) SearchService(minPrice, maxPrice int, args []string, quer
 	return nil
 }
 
-func (s *OrderService) GetOrdersByPeriod(period, month, year string) (map[string]interface{}, error) {
-	return nil, nil
+func (s *OrderService) GetOrderedItemsByPeriod(period, month, year string) (map[string]interface{}, error) {
+	if period == "" {
+		return nil, fmt.Errorf("period is required")
+	}
+
+	if period == "day" {
+		if month == "" {
+			return nil, fmt.Errorf("period equal to 'day', but month not provided")
+		}
+	} else if period == "month" {
+		if year == "" {
+			return nil, fmt.Errorf("period equal to 'month', but year not provided")
+		}
+	} else {
+		return nil, fmt.Errorf("invalid period value, must be 'day' or 'month'")
+	}
+
+	if period == "day" {
+		monthInt := getMonthNumber(strings.ToLower(month))
+		if monthInt == -1 {
+			return nil, fmt.Errorf("%s, month does not exist", month)
+		}
+
+		var yearInt int
+		if year == "" {
+			yearInt = -1
+		} else {
+			n, err := strconv.Atoi(year)
+			if err != nil {
+				return nil, fmt.Errorf("year must be a number")
+			}
+			yearInt = n
+		}
+
+		return s.orderRepo.OrderedItemsByDay(monthInt, yearInt)
+	} else if period == "month" {
+		return s.orderRepo.OrderedItemsByMonth(year)
+	}
+
+	return nil, fmt.Errorf("invalid inputs. Period: %v, Month: %s, Year: %s", period, month, year)
+}
+
+func getMonthNumber(month string) int {
+	months := map[string]int{
+		"january":   1,
+		"february":  2,
+		"march":     3,
+		"april":     4,
+		"may":       5,
+		"june":      6,
+		"july":      7,
+		"august":    8,
+		"september": 9,
+		"october":   10,
+		"november":  11,
+		"december":  12,
+	}
+
+	v, ok := months[month]
+	if !ok {
+		return -1
+	}
+	return v
 }
