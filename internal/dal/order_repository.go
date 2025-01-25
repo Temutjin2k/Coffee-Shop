@@ -4,9 +4,10 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"hot-coffee/models"
 	"log"
 	"time"
+
+	"hot-coffee/models"
 )
 
 // OrderRepository implements OrderRepository using JSON files
@@ -96,24 +97,53 @@ func (repo *OrderRepository) SaveUpdatedOrder(updatedOrder models.Order, OrderID
 }
 
 func (repo *OrderRepository) DeleteOrder(OrderID int) error {
+	tx, err := repo.db.Begin()
+	if err != nil {
+		return err
+	}
+
+	// Убедимся, что транзакция будет откатана, если возникнет ошибка
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+		}
+	}()
+
+	// checking if orders exist
+	var orderExists bool
+	queryCheckOrder := `SELECT EXISTS(SELECT 1 FROM orders WHERE ID = $1)`
+	err = tx.QueryRow(queryCheckOrder, OrderID).Scan(&orderExists)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	if !orderExists {
+		tx.Rollback()
+		return fmt.Errorf("order with ID %d not found", OrderID)
+	}
+
 	queryDeleteOrderItems := `
-	delete from order_items
-	where OrderID = $1
+	DELETE FROM order_items
+	WHERE OrderID = $1
 	`
-	_, err := repo.db.Exec(queryDeleteOrderItems, OrderID)
+	_, err = tx.Exec(queryDeleteOrderItems, OrderID)
 	if err != nil {
-		return err
+		tx.Rollback()
+		return fmt.Errorf("failed to delete order items: %w", err)
 	}
+
 	queryDeleteOrder := `
-	delete from orders
-	where ID = $1
+	DELETE FROM orders
+	WHERE ID = $1
 	`
-	_, err = repo.db.Exec(queryDeleteOrder, OrderID)
+	_, err = tx.Exec(queryDeleteOrder, OrderID)
 	if err != nil {
-		log.Println("qwe")
-		return err
+		tx.Rollback()
+		return fmt.Errorf("failed to delete order: %w", err)
 	}
-	return nil
+
+	return tx.Commit()
 }
 
 func (repo *OrderRepository) CloseOrderRepo(id string) error {
