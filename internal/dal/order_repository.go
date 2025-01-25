@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"hot-coffee/models"
@@ -332,7 +333,52 @@ func (repo *OrderRepository) OrderedItemsByDay(month, year int) (map[string]inte
 }
 
 // Returns the number of orders for the specified period, grouped by month within a year
+func (repo *OrderRepository) OrderedItemsByMonth(year int) (map[string]interface{}, error) {
+	query := `
+		SELECT 
+			TO_CHAR(o.createdat, 'Month') AS month,
+			COUNT(o.ID) AS total_orders
+		FROM 
+			orders o
+		WHERE 
+			EXTRACT(YEAR FROM o.createdat) = $1
+			AND o.status = 'closed'
+		GROUP BY 
+			TO_CHAR(o.createdat, 'Month'), EXTRACT(MONTH FROM o.createdat)
+		ORDER BY 
+			EXTRACT(MONTH FROM o.createdat);
+	`
+	rows, err := repo.db.Query(query, year)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
 
-func (repo *OrderRepository) OrderedItemsByMonth(year string) (map[string]interface{}, error) {
-	return nil, nil
+	orderedItems := make(map[string]interface{})
+
+	// Iterate over the rows and populate the map
+	for rows.Next() {
+		var month string
+		var orderCount int
+
+		if err := rows.Scan(&month, &orderCount); err != nil {
+			return nil, err
+		}
+
+		month = strings.TrimSpace(month)
+
+		orderedItems[month] = orderCount
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	result := map[string]interface{}{
+		"period":       "month",
+		"year":         year,
+		"orderedItems": orderedItems,
+	}
+
+	return result, nil
 }

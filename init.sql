@@ -230,30 +230,30 @@ INSERT INTO menu_item_ingredients (MenuID, IngredientID, Quantity) VALUES
 
 -- Mock data for orders
 --2024
-INSERT INTO orders (CustomerName, Notes, CreatedAt) VALUES
-('Alex Green', '{"notes": "No sugar, extra hot"}', '2024-12-01 08:45:00'),
-('Betty Blue', '{"notes": "Double espresso"}', '2024-12-02 09:30:00'),
-('Charlie Red', '{"notes": "Extra chocolate syrup"}', '2024-12-03 10:00:00'),
-('Daniel Smith', '{"notes": "No foam, extra strong"}', '2024-12-05 11:00:00'),
-('Eva White', '{"notes": "Add whipped cream"}', '2024-12-06 12:00:00'),
-('Frank Yellow', '{"notes": "Light milk foam"}', '2024-12-07 13:30:00'),
-('Grace Pink', '{"notes": "Less sugar, extra vanilla syrup"}', '2024-12-10 14:45:00'),
-('Hank Brown', '{"notes": "More coffee, less ice"}', '2024-12-12 16:00:00'),
-('Ivy Grey', '{"notes": "Cinnamon topping"}', '2024-12-15 17:30:00'),
-('Jack Gold', '{"notes": "Extra shot of espresso"}', '2024-12-17 18:00:00');
+INSERT INTO orders (CustomerName, Status, Notes, CreatedAt) VALUES
+('Alex Green', 'closed', '{"notes": "No sugar, extra hot"}', '2024-12-01 08:45:00'),
+('Betty Blue', 'closed', '{"notes": "Double espresso"}', '2024-12-02 09:30:00'),
+('Charlie Red', 'closed', '{"notes": "Extra chocolate syrup"}', '2024-12-03 10:00:00'),
+('Daniel Smith', 'closed', '{"notes": "No foam, extra strong"}', '2024-12-05 11:00:00'),
+('Eva White', 'closed', '{"notes": "Add whipped cream"}', '2024-12-06 12:00:00'),
+('Frank Yellow', 'closed', '{"notes": "Light milk foam"}', '2024-12-07 13:30:00'),
+('Grace Pink', 'closed', '{"notes": "Less sugar, extra vanilla syrup"}', '2024-12-10 14:45:00'),
+('Hank Brown', 'closed', '{"notes": "More coffee, less ice"}', '2024-12-12 16:00:00'),
+('Ivy Grey', 'closed', '{"notes": "Cinnamon topping"}', '2024-12-15 17:30:00'),
+('Jack Gold', 'closed', '{"notes": "Extra shot of espresso"}', '2024-12-17 18:00:00');
 
 -- 2025
-INSERT INTO orders (CustomerName, Notes, CreatedAt) VALUES
-('Kimberly Blue', '{"notes": "Hot and strong"}', '2025-01-02 09:00:00'),
-('Liam Green', '{"notes": "Cold milk, no sugar"}', '2025-01-04 09:30:00'),
-('Megan Black', '{"notes": "Extra foam and cinnamon"}', '2025-01-05 10:15:00'),
-('Nina Yellow', '{"notes": "Extra hot and vanilla syrup"}', '2025-01-06 11:45:00'),
-('Oliver White', '{"notes": "Less milk, extra coffee"}', '2025-01-07 12:00:00'),
-('Peter Red', '{"notes": "No whipped cream, add syrup"}', '2025-01-08 13:00:00'),
-('Quincy Purple', '{"notes": "Iced coffee, extra shot"}', '2025-01-10 14:00:00'),
-('Rebecca Grey', '{"notes": "Add caramel"}', '2025-01-11 15:30:00'),
-('Steve Brown', '{"notes": "Add extra ice"}', '2025-01-12 16:45:00'),
-('Tina Pink', '{"notes": "No milk, extra strong"}', '2025-01-13 17:00:00');
+INSERT INTO orders (CustomerName, Status, Notes, CreatedAt) VALUES
+('Kimberly Blue', 'closed', '{"notes": "Hot and strong"}', '2025-01-02 09:00:00'),
+('Liam Green', 'closed', '{"notes": "Cold milk, no sugar"}', '2025-01-04 09:30:00'),
+('Megan Black', 'closed', '{"notes": "Extra foam and cinnamon"}', '2025-01-05 10:15:00'),
+('Nina Yellow', 'closed', '{"notes": "Extra hot and vanilla syrup"}', '2025-01-06 11:45:00'),
+('Oliver White', 'closed', '{"notes": "Less milk, extra coffee"}', '2025-01-07 12:00:00'),
+('Peter Red', 'closed', '{"notes": "No whipped cream, add syrup"}', '2025-01-08 13:00:00'),
+('Quincy Purple', 'closed', '{"notes": "Iced coffee, extra shot"}', '2025-01-10 14:00:00'),
+('Rebecca Grey', 'closed', '{"notes": "Add caramel"}', '2025-01-11 15:30:00'),
+('Steve Brown', 'closed', '{"notes": "Add extra ice"}', '2025-01-12 16:45:00'),
+('Tina Pink', 'closed', '{"notes": "No milk, extra strong"}', '2025-01-13 17:00:00');
 
 
 

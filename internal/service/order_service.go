@@ -192,7 +192,12 @@ func (s *OrderService) GetOrderedItemsByPeriod(period, month, year string) (map[
 
 		return s.orderRepo.OrderedItemsByDay(monthInt, yearInt)
 	} else if period == "month" {
-		return s.orderRepo.OrderedItemsByMonth(year)
+
+		yearInt, err := strconv.Atoi(year)
+		if err != nil {
+			return nil, fmt.Errorf("year should be number")
+		}
+		return s.orderRepo.OrderedItemsByMonth(yearInt)
 	}
 
 	return nil, fmt.Errorf("invalid inputs. Period: %v, Month: %s, Year: %s", period, month, year)
