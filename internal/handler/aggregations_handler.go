@@ -3,6 +3,7 @@ package handler
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -55,30 +56,19 @@ func (h *AggregationHandler) PopularItemsHandler(w http.ResponseWriter, r *http.
 	h.logger.Info("Request handled successfully.", "method", r.Method, "url", r.URL)
 }
 
-/*
-	2
-	GET /reports/search: Search through orders, menu items, and customers with partial matching and ranking.
-	##### Parameters:
-
-		q (required): Search query string
-		filter (optional): What to search through, can be multiple values comma-separated:
-			orders (search in customer names and order details)
-			menu (search in item names and descriptions)
-			all (default, search everywhere)
-		minPrice (optional): Minimum order/item price to include
-		maxPrice (optional): Maximum order/item price to include
-*/
-
 func (h *AggregationHandler) SearchHandler(w http.ResponseWriter, r *http.Request) {
 	querySrting := r.URL.Query().Get("q")
 	filter := r.URL.Query().Get("filter")
 	minPrice := r.URL.Query().Get("minPrice")
 	maxPrice := r.URL.Query().Get("maxPrice")
+
 	if querySrting == "" {
 		h.logger.Error("Search query string is required", "method", r.Method, "url", r.URL)
 		ErrorHandler.Error(w, "Search query string is required", http.StatusBadRequest)
 		return
 	}
+	log.Println(querySrting)
+
 	var args []string
 	if filter != "" {
 		args = strings.Split(filter, ",")
@@ -90,6 +80,7 @@ func (h *AggregationHandler) SearchHandler(w http.ResponseWriter, r *http.Reques
 			return
 		}
 	}
+	log.Println(filter)
 	var MinPrice int
 	if minPrice != "" {
 		MinPriceTemp, err := strconv.Atoi(minPrice)
@@ -102,27 +93,23 @@ func (h *AggregationHandler) SearchHandler(w http.ResponseWriter, r *http.Reques
 	} else {
 		MinPrice = 0
 	}
+	log.Println(MinPrice)
 
 	var MaxPrice int
-	if minPrice != "" {
-		MaxPriceTemp, err := strconv.Atoi(minPrice)
+	if maxPrice != "" {
+		MaxPriceTemp, err := strconv.Atoi(maxPrice)
 		if err != nil {
 			h.logger.Error("Max Price should be number", "method", r.Method, "url", r.URL)
 			ErrorHandler.Error(w, "Max Price should be number", http.StatusBadRequest)
 			return
 		}
-		MinPrice = MaxPriceTemp
+		MaxPrice = MaxPriceTemp
 	} else {
-		MaxPrice = 999999
+		MaxPrice = 9999999
 	}
+	log.Println(MaxPrice)
 
-	MaxPrice, err := strconv.Atoi(maxPrice)
-	if err != nil {
-		h.logger.Error("Max Price should be number", "method", r.Method, "url", r.URL)
-		ErrorHandler.Error(w, "Max Price should be number", http.StatusBadRequest)
-		return
-	}
-	err = h.orderService.SearchService(MinPrice, MaxPrice, args, querySrting)
+	err := h.orderService.SearchService(MinPrice, MaxPrice, args, querySrting)
 	if err != nil {
 		h.logger.Error(err.Error(), "method", r.Method, "url", r.URL)
 		ErrorHandler.Error(w, "Cannot searched", http.StatusInternalServerError)

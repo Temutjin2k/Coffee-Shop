@@ -2,12 +2,13 @@ package server
 
 import (
 	"database/sql"
-	"hot-coffee/internal/dal"
-	"hot-coffee/internal/handler"
-	"hot-coffee/internal/service"
 	"log"
 	"log/slog"
 	"net/http"
+
+	"hot-coffee/internal/dal"
+	"hot-coffee/internal/handler"
+	"hot-coffee/internal/service"
 )
 
 func ServerLaunch(db *sql.DB, logger *slog.Logger) {
@@ -58,10 +59,10 @@ func ServerLaunch(db *sql.DB, logger *slog.Logger) {
 
 	mux.HandleFunc("GET /reports/total-sales", reportHandler.TotalSalesHandler)
 	mux.HandleFunc("GET /reports/popular-items", reportHandler.PopularItemsHandler)
-	mux.HandleFunc("GET /reports/search", reportHandler.SearchHandler)
 
 	// TOOD
 	mux.HandleFunc("GET /reports/orderedItemsByPeriod", reportHandler.OrderByPeriod)
+	mux.HandleFunc("GET /reports/search", reportHandler.SearchHandler)
 
 	logger.Info("Application started", "Address", "http://localhost:8080/")
 	log.Fatal(http.ListenAndServe(":8080", mux))
