@@ -60,7 +60,6 @@ func ServerLaunch(db *sql.DB, logger *slog.Logger) {
 	mux.HandleFunc("GET /reports/total-sales", reportHandler.TotalSalesHandler)
 	mux.HandleFunc("GET /reports/popular-items", reportHandler.PopularItemsHandler)
 
-	// TOOD
 	mux.HandleFunc("GET /reports/orderedItemsByPeriod", reportHandler.OrderByPeriod)
 	mux.HandleFunc("GET /reports/search", reportHandler.SearchHandler)
 

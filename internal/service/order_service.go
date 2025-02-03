@@ -203,6 +203,10 @@ func (s *OrderService) GetOrderedItemsByPeriod(period, month, year string) (map[
 	return nil, fmt.Errorf("invalid inputs. Period: %v, Month: %s, Year: %s", period, month, year)
 }
 
+func (s *OrderService) BulkOrders([]models.Order) (interface{}, error) {
+	return nil, nil
+}
+
 func getMonthNumber(month string) int {
 	months := map[string]int{
 		"january":   1,

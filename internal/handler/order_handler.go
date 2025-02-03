@@ -3,13 +3,14 @@ package handler
 import (
 	"encoding/json"
 	"fmt"
-	"hot-coffee/internal/ErrorHandler"
-	"hot-coffee/internal/service"
-	"hot-coffee/models"
 	"log/slog"
 	"net/http"
 	"strconv"
 	"time"
+
+	"hot-coffee/internal/ErrorHandler"
+	"hot-coffee/internal/service"
+	"hot-coffee/models"
 )
 
 type OrderHandler struct {
@@ -256,4 +257,25 @@ Process multiple orders simultaneously while ensuring inventory consistency.
 This endpoint must handle concurrent orders and maintain data integrity using transactions.
 */
 func (h *OrderHandler) BatchOrders(w http.ResponseWriter, r *http.Request) {
+	request := struct {
+		Orders []models.Order `json:"orders"`
+	}{}
+	err := json.NewDecoder(r.Body).Decode(&request)
+	if err != nil {
+		h.logger.Error("Could not decode request json data", "error", err, "method", r.Method, "url", r.URL)
+		ErrorHandler.Error(w, "Could not decode request json data", http.StatusBadRequest)
+		return
+	}
+
+	ordersReport, err := h.orderService.BulkOrders(request.Orders)
+	if err != nil {
+		h.logger.Error("Error proccing orders", "error", err, "method", r.Method, "url", r.URL)
+		ErrorHandler.Error(w, "Error proccing orders", http.StatusBadRequest)
+		return
+	}
+
+	if err := json.NewEncoder(w).Encode(ordersReport); err != nil {
+		h.logger.Error("Error encoding responce", "error", err, "method", r.Method, "url", r.URL)
+		ErrorHandler.Error(w, "Error encoding responce", http.StatusInternalServerError)
+	}
 }
