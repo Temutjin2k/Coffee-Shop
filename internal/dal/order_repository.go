@@ -4,14 +4,12 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"log"
 	"strings"
 	"time"
 
 	"hot-coffee/models"
 )
 
-// OrderRepository implements OrderRepository using JSON files
 type OrderRepository struct {
 	db *sql.DB
 }
@@ -22,13 +20,11 @@ func NewOrderRepository(db *sql.DB) *OrderRepository {
 }
 
 func (repo *OrderRepository) GetAll() ([]models.Order, error) {
-	// Чтение заказов
 	orders, err := getOrders(repo.db)
 	if err != nil {
-		log.Fatalf("Ошибка получения заказов: %v", err)
+		return nil, fmt.Errorf("ошибка получения заказов: %v", err)
 	}
 
-	// Вывод данных
 	return orders, err
 }
 
@@ -65,17 +61,14 @@ func (repo *OrderRepository) SaveUpdatedOrder(updatedOrder models.Order, OrderID
 	err := repo.db.QueryRow(queryCheckStatus, OrderID).Scan(&Status)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			log.Println("bro")
 			return errors.New("no order found with the given ID")
 		}
-		log.Println("bro")
 		return err // Return any other error
 	}
 
 	if Status == "closed" {
 		return errors.New("the requested order is already closed")
 	}
-	log.Println(Status)
 	queryUpdateOrder := `
 	update orders 
 	set CustomerName = $1

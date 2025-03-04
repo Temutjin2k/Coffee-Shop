@@ -68,7 +68,6 @@ func (h *MenuHandler) GetMenu(w http.ResponseWriter, r *http.Request) {
 	}
 	h.logger.Info("Request handled successfully.", "method", r.Method, "url", r.URL)
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(200)
 	w.Write(jsonData)
 }
 
@@ -91,7 +90,6 @@ func (h *MenuHandler) GetMenuItem(w http.ResponseWriter, r *http.Request) {
 		ErrorHandler.Error(w, "Could not send menu item", http.StatusInternalServerError)
 	}
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(200)
 	w.Write(jsonData)
 
 	h.logger.Info("Request handled successfully.", "method", r.Method, "url", r.URL)

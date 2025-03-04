@@ -274,6 +274,7 @@ func (h *OrderHandler) BatchOrders(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(ordersReport); err != nil {
 		h.logger.Error("Error encoding responce", "error", err, "method", r.Method, "url", r.URL)
 		ErrorHandler.Error(w, "Error encoding responce", http.StatusInternalServerError)

@@ -3,7 +3,6 @@ package service
 import (
 	"errors"
 	"fmt"
-	"log"
 	"sort"
 	"strconv"
 	"strings"
@@ -142,12 +141,11 @@ func (s *OrderService) GetNumberOfItems(startDate, endDate string) (map[string]i
 	if err != nil {
 		return nil, fmt.Errorf("invalid time format of startDate")
 	}
-	log.Println(start)
+
 	end, err := time.Parse("2006-01-02", endDate)
 	if err != nil {
 		return nil, fmt.Errorf("invalid time format of endDate")
 	}
-	log.Println(end)
 
 	return s.orderRepo.GetNumberOfItems(start, end)
 }
@@ -204,7 +202,13 @@ func (s *OrderService) GetOrderedItemsByPeriod(period, month, year string) (map[
 }
 
 func (s *OrderService) BulkOrders([]models.Order) (interface{}, error) {
-	return nil, nil
+	result := models.BatchOrdersResponce{
+		Processed_orders: []models.BatchProcessedOrders{},
+		Summary: models.BatchOrderSummary{
+			InventoryUpdates: []models.BatchOrderInventoryUpdate{},
+		},
+	}
+	return result, nil
 }
 
 func getMonthNumber(month string) int {

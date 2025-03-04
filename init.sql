@@ -122,21 +122,38 @@ FOR EACH ROW
 EXECUTE FUNCTION log_price_change();
 
 -- Функция для логирования изменения статуса заказа
-CREATE OR REPLACE FUNCTION log_order_status_change()
+-- Создание функции для триггера при вставке в orders
+CREATE OR REPLACE FUNCTION insert_order_status_history()
 RETURNS TRIGGER AS $$
 BEGIN
-    IF NEW.Status <> OLD.Status THEN
-        INSERT INTO order_status_history (OrderID, OpenedAt)
-        VALUES (OLD.ID, CURRENT_TIMESTAMP);
-    END IF;
+    INSERT INTO order_status_history (OrderID, OpenedAt)
+    VALUES (NEW.ID, CURRENT_TIMESTAMP);
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER order_status_change_trigger
+CREATE TRIGGER after_insert_orders
+AFTER INSERT ON orders
+FOR EACH ROW
+EXECUTE FUNCTION insert_order_status_history();
+
+-- Функция для логирования изменения статуса заказа
+-- Создание функции для триггера при обновлении в orders
+CREATE OR REPLACE FUNCTION update_order_status_history()
+RETURNS TRIGGER AS $$
+BEGIN
+    UPDATE order_status_history
+    SET ClosedAt = CURRENT_TIMESTAMP
+    WHERE OrderID = NEW.ID AND ClosedAt IS NULL;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER after_update_orders
 AFTER UPDATE ON orders
 FOR EACH ROW
-EXECUTE FUNCTION log_order_status_change();
+EXECUTE FUNCTION update_order_status_history();
+
 
 --Автоматическое логирование в inventory_transactions.
 CREATE OR REPLACE FUNCTION log_inventory_transaction()
@@ -228,19 +245,19 @@ INSERT INTO menu_item_ingredients (MenuID, IngredientID, Quantity) VALUES
 (10, 7, 50);  -- Chocolate Croissant: 50 g Chocolate
 
 
--- Mock data for orders
+-- Mock data for orders 
 --2024
 INSERT INTO orders (CustomerName, Status, Notes, CreatedAt) VALUES
-('Alex Green', 'closed', '{"notes": "No sugar, extra hot"}', '2024-12-01 08:45:00'),
-('Betty Blue', 'closed', '{"notes": "Double espresso"}', '2024-12-02 09:30:00'),
-('Charlie Red', 'closed', '{"notes": "Extra chocolate syrup"}', '2024-12-03 10:00:00'),
-('Daniel Smith', 'closed', '{"notes": "No foam, extra strong"}', '2024-12-05 11:00:00'),
-('Eva White', 'closed', '{"notes": "Add whipped cream"}', '2024-12-06 12:00:00'),
-('Frank Yellow', 'closed', '{"notes": "Light milk foam"}', '2024-12-07 13:30:00'),
-('Grace Pink', 'closed', '{"notes": "Less sugar, extra vanilla syrup"}', '2024-12-10 14:45:00'),
-('Hank Brown', 'closed', '{"notes": "More coffee, less ice"}', '2024-12-12 16:00:00'),
-('Ivy Grey', 'closed', '{"notes": "Cinnamon topping"}', '2024-12-15 17:30:00'),
-('Jack Gold', 'closed', '{"notes": "Extra shot of espresso"}', '2024-12-17 18:00:00');
+('tkoszhan', 'open', '{"notes": "No sugar, extra hot"}', '2024-12-01 08:45:00'),
+('malmpamys', 'open', '{"notes": "Double espresso"}', '2024-12-02 09:30:00'),
+('brakhimb', 'open', '{"notes": "Extra chocolate syrup"}', '2024-12-03 10:00:00'),
+('igussak', 'open', '{"notes": "No foam, extra strong"}', '2024-12-05 11:00:00'),
+('nkali', 'open', '{"notes": "Add whipped cream"}', '2024-12-06 12:00:00'),
+('nsheri', 'open', '{"notes": "Light milk foam"}', '2024-12-07 13:30:00'),
+('bsagat', 'open', '{"notes": "Less sugar, extra vanilla syrup"}', '2024-12-10 14:45:00'),
+('ashpring', 'open', '{"notes": "More coffee, less ice"}', '2024-12-12 16:00:00'),
+('ilim', 'open', '{"notes": "Cinnamon topping"}', '2024-12-15 17:30:00'),
+('akakimbe', 'open', '{"notes": "Extra shot of espresso"}', '2024-12-17 18:00:00');
 
 -- 2025
 INSERT INTO orders (CustomerName, Status, Notes, CreatedAt) VALUES
@@ -259,18 +276,18 @@ INSERT INTO orders (CustomerName, Status, Notes, CreatedAt) VALUES
 
 -- 2024
 INSERT INTO order_items (OrderID, ProductID, Quantity) VALUES
-(1, 1, 1),  -- Alex: 1 Caffe Latte
-(1, 2, 1),  -- Alex: 1 Blueberry Muffin
-(2, 1, 2),  -- Betty: 2 Espresso
-(3, 5, 1),  -- Charlie: 1 Mocha
-(3, 6, 1),  -- Charlie: 1 Iced Latte
-(4, 1, 1),  -- Daniel: 1 Espresso
-(5, 3, 2),  -- Eva: 2 Carrot Cake
-(6, 7, 1),  -- Frank: 1 Americano
-(7, 9, 1),  -- Grace: 1 Vanilla Latte
-(8, 10, 2),  -- Hank: 2 Chocolate Croissants
-(9, 4, 1),  -- Ivy: 1 Cappuccino
-(10, 1, 2);  -- Jack: 2 Espresso
+(1, 1, 1),  -- tkoszhan: 1 Caffe Latte
+(1, 2, 1),  -- tkoszhan: 1 Blueberry Muffin
+(2, 1, 2),  -- malmpamys: 2 Espresso
+(3, 5, 1),  -- brakhimb: 1 Mocha
+(3, 6, 1),  -- brakhimb: 1 Iced Latte
+(4, 1, 1),  -- igussak: 1 Espresso
+(5, 3, 2),  -- nkali: 2 Carrot Cake
+(6, 7, 1),  -- nsheri: 1 Americano
+(7, 9, 1),  -- bsagat: 1 Vanilla Latte
+(8, 10, 2),  -- ashpring: 2 Chocolate Croissants
+(9, 4, 1),  -- ilim: 1 Cappuccino
+(10, 1, 2);  -- akakimbe: 2 Espresso
 
 -- 2025
 INSERT INTO order_items (OrderID, ProductID, Quantity) VALUES
