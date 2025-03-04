@@ -19,37 +19,94 @@ func NewOrderRepository(db *sql.DB) *OrderRepository {
 	return &OrderRepository{db: db}
 }
 
-func (repo *OrderRepository) GetAll() ([]models.Order, error) {
-	orders, err := getOrders(repo.db)
-	if err != nil {
-		return nil, fmt.Errorf("ошибка получения заказов: %v", err)
+func (repo *OrderRepository) Add(order models.Order) (models.BatchOrderInfo, error) {
+	processInfo := models.BatchOrderInfo{
+		OrderID:      order.ID,
+		CustomerName: order.CustomerName,
+		Status:       models.StatusOrderRejected,
 	}
 
-	return orders, err
-}
+	tx, err := repo.db.Begin()
+	if err != nil {
+		processInfo.Reason = "internal server error. Failed to start transaction."
+		return processInfo, err
+	}
 
-func (repo *OrderRepository) Add(order models.Order) error {
-	// Insert into `orders` and retrieve the ID
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+		}
+	}()
+
+	// Inserting order and getting ID
 	queryOrder := `
         INSERT INTO orders (CustomerName)
         VALUES ($1)
         RETURNING ID
     `
 	var ID int
-	repo.db.QueryRow(queryOrder, order.CustomerName).Scan(&ID)
+	err = tx.QueryRow(queryOrder, order.CustomerName).Scan(&ID)
+	if err != nil {
+		processInfo.Reason = "internal server error. Failed to scan ID"
+		return processInfo, err
+	}
 
-	for _, v := range order.Items {
-		queryOrderItems := `
-		insert into order_items (ProductID, Quantity, OrderID) values
+	// Inserting order items. in case when same product id is given, it check on conflict, if so it's just adding quantity for previus row.
+	queryOrderItems := `
+		INSERT INTO order_items (ProductID, Quantity, OrderID) VALUES
 		($1, $2, $3)
 		ON CONFLICT (OrderID, ProductID)
 		DO UPDATE SET Quantity = order_items.Quantity + EXCLUDED.Quantity;
-		`
+	`
 
-		repo.db.Exec(queryOrderItems, v.ProductID, v.Quantity, ID)
+	for _, v := range order.Items {
+		_, err = tx.Exec(queryOrderItems, v.ProductID, v.Quantity, ID)
+		if err != nil {
+			processInfo.Reason = "internal server error."
+			return processInfo, err
+		}
 	}
 
-	return nil
+	// Commiting transaction
+	err = tx.Commit()
+	if err != nil {
+		return models.BatchOrderInfo{}, err
+	}
+	processInfo.Reason = models.StatusOrderAccepted
+
+	return processInfo, nil
+}
+
+func (repo *OrderRepository) GetAll() ([]models.Order, error) {
+	query := `
+	 SELECT ID, CustomerName, Status, CreatedAt
+	 FROM orders`
+
+	rows, err := repo.db.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var orders []models.Order
+
+	for rows.Next() {
+		var order models.Order
+		if err := rows.Scan(&order.ID, &order.CustomerName, &order.Status, &order.CreatedAt); err != nil {
+			return nil, err
+		}
+
+		// Получение элементов заказа
+		items, err := getOrderItems(repo.db, order.ID)
+		if err != nil {
+			return nil, err
+		}
+		order.Items = items
+
+		orders = append(orders, order)
+	}
+
+	return orders, nil
 }
 
 func (repo *OrderRepository) SaveUpdatedOrder(updatedOrder models.Order, OrderID string) error {
@@ -96,7 +153,6 @@ func (repo *OrderRepository) DeleteOrder(OrderID int) error {
 		return err
 	}
 
-	// Убедимся, что транзакция будет откатана, если возникнет ошибка
 	defer func() {
 		if err != nil {
 			tx.Rollback()
@@ -141,47 +197,33 @@ func (repo *OrderRepository) DeleteOrder(OrderID int) error {
 }
 
 func (repo *OrderRepository) CloseOrderRepo(id string) error {
-	queryToClose := `
-	update orders set status = 'closed'
-	where ID = $1
+	// Check current order status
+	var status string
+	queryCheckStatus := `
+		SELECT status FROM orders WHERE ID = $1
 	`
-	_, err := repo.db.Exec(queryToClose, id)
+	err := repo.db.QueryRow(queryCheckStatus, id).Scan(&status)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return fmt.Errorf("order with ID %s not found", id)
+		}
+		return err
+	}
+
+	if status == "closed" {
+		return fmt.Errorf("order with ID %s is already closed", id)
+	}
+
+	// Update order status to "closed"
+	queryToClose := `
+		UPDATE orders SET status = 'closed' WHERE ID = $1
+	`
+	_, err = repo.db.Exec(queryToClose, id)
 	if err != nil {
 		return err
 	}
+
 	return nil
-}
-
-func getOrders(db *sql.DB) ([]models.Order, error) {
-	query := `
-	 SELECT ID, CustomerName, Status, CreatedAt
-	 FROM orders`
-
-	rows, err := db.Query(query)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var orders []models.Order
-
-	for rows.Next() {
-		var order models.Order
-		if err := rows.Scan(&order.ID, &order.CustomerName, &order.Status, &order.CreatedAt); err != nil {
-			return nil, err
-		}
-
-		// Получение элементов заказа
-		items, err := getOrderItems(db, order.ID)
-		if err != nil {
-			return nil, err
-		}
-		order.Items = items
-
-		orders = append(orders, order)
-	}
-
-	return orders, nil
 }
 
 func getOrderItems(db *sql.DB, orderID int) ([]models.OrderItem, error) {
@@ -192,7 +234,7 @@ func getOrderItems(db *sql.DB, orderID int) ([]models.OrderItem, error) {
 
 	rows, err := db.Query(query, orderID)
 	if err != nil {
-		return nil, fmt.Errorf("не удалось выполнить запрос для order_items: %w", err)
+		return nil, fmt.Errorf("failed request for order_items: %w", err)
 	}
 	defer rows.Close()
 
@@ -201,7 +243,7 @@ func getOrderItems(db *sql.DB, orderID int) ([]models.OrderItem, error) {
 	for rows.Next() {
 		var item models.OrderItem
 		if err := rows.Scan(&item.ProductID, &item.Quantity); err != nil {
-			return nil, fmt.Errorf("ошибка сканирования строки в order_items: %w", err)
+			return nil, fmt.Errorf("error scanning row in order_items: %w", err)
 		}
 		items = append(items, item)
 	}
@@ -259,7 +301,7 @@ func (repo *OrderRepository) GetNumberOfItems(startDate, endDate time.Time) (map
 
 func (repo *OrderRepository) GetEarliestDate() string {
 	query := `
-	select min(CreatedAt) from orders
+	SELECT min(CreatedAt) FROM orders
 	`
 	row, _ := repo.db.Query(query)
 	var Date string

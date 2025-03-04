@@ -47,7 +47,7 @@ func (h *OrderHandler) PostOrder(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	err = h.orderService.AddOrder(NewOrder)
+	_, err = h.orderService.AddOrder(NewOrder)
 	if err != nil {
 		if err.Error() == "something wrong with your requested order" {
 			h.logger.Error(err.Error(), "error", err, "method", r.Method, "url", r.URL)
@@ -173,51 +173,65 @@ func (h *OrderHandler) DeleteOrder(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *OrderHandler) CloseOrder(w http.ResponseWriter, r *http.Request) {
-	ID, err := strconv.Atoi(r.PathValue("id"))
+	ID := r.PathValue("id")
+
+	err := h.orderService.CloseOrder(ID)
 	if err != nil {
-		ErrorHandler.Error(w, "The id should be positive integer", http.StatusBadRequest)
-		h.logger.Error("The id should be positive integer", "method", r.Method, "url", r.URL)
+		h.logger.Error("Error closing order", "error", err, "method", r.Method, "url", r.URL)
+		ErrorHandler.Error(w, err.Error(), http.StatusBadRequest)
 		return
-	}
-	Order, err := h.orderService.GetOrder(ID)
-	if Order.Status == "closed" {
-		ErrorHandler.Error(w, "The order is already closed", http.StatusBadRequest)
-		h.logger.Error("The order is already closed", "method", r.Method, "url", r.URL)
-		return
-	}
-	if err != nil {
-		if err.Error() == "The order with given ID soes not exist" {
-			ErrorHandler.Error(w, err.Error(), http.StatusBadRequest)
-			h.logger.Error(err.Error(), "error", err, "method", r.Method, "url", r.URL)
-			return
-		} else {
-			h.logger.Error(err.Error(), "error", err, "method", r.Method, "url", r.URL)
-			ErrorHandler.Error(w, "Something happened when getting order by ID", http.StatusInternalServerError)
-			return
-		}
-	}
-	for _, item := range Order.Items {
-		err := h.menuService.SubtractIngredientsByID(item.ProductID, item.Quantity)
-		if err != nil {
-			h.logger.Error("Not enough ingridients to close the order", "error", err, "method", r.Method, "url", r.URL)
-			ErrorHandler.Error(w, "Not enough ingridients to close the order", http.StatusBadRequest)
-		}
-	}
-	err = h.orderService.CloseOrder(r.PathValue("id"))
-	if err != nil {
-		if err.Error() == "The requested order already closed" {
-			h.logger.Error(err.Error(), "error", err, "method", r.Method, "url", r.URL)
-			ErrorHandler.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		} else {
-			h.logger.Error("Something happened when closing order", "error", err, "method", r.Method, "url", r.URL)
-			ErrorHandler.Error(w, "Something happened when closing order", http.StatusInternalServerError)
-			return
-		}
 	}
 	h.logger.Info("Request handled successfully.", "method", r.Method, "url", r.URL)
-	w.WriteHeader(200)
 }
+
+// func (h *OrderHandler) CloseOrder(w http.ResponseWriter, r *http.Request) {
+// 	ID, err := strconv.Atoi(r.PathValue("id"))
+// 	if err != nil {
+// 		ErrorHandler.Error(w, "The id should be positive integer", http.StatusBadRequest)
+// 		h.logger.Error("The id should be positive integer", "method", r.Method, "url", r.URL)
+// 		return
+// 	}
+// 	Order, err := h.orderService.GetOrder(ID)
+// 	if err != nil {
+// 		if err.Error() == "The order with given ID soes not exist" {
+// 			ErrorHandler.Error(w, err.Error(), http.StatusBadRequest)
+// 			h.logger.Error(err.Error(), "error", err, "method", r.Method, "url", r.URL)
+// 			return
+// 		} else {
+// 			h.logger.Error(err.Error(), "error", err, "method", r.Method, "url", r.URL)
+// 			ErrorHandler.Error(w, "Something happened when getting order by ID", http.StatusInternalServerError)
+// 			return
+// 		}
+// 	}
+
+// 	if Order.Status == "closed" {
+// 		ErrorHandler.Error(w, "The order is already closed", http.StatusBadRequest)
+// 		h.logger.Error("The order is already closed", "method", r.Method, "url", r.URL)
+// 		return
+// 	}
+
+// 	for _, item := range Order.Items {
+// 		err := h.menuService.SubtractIngredientsByID(item.ProductID, item.Quantity)
+// 		if err != nil {
+// 			h.logger.Error("Not enough ingridients to close the order", "error", err, "method", r.Method, "url", r.URL)
+// 			ErrorHandler.Error(w, "Not enough ingridients to close the order", http.StatusBadRequest)
+// 		}
+// 	}
+// 	err = h.orderService.CloseOrder(r.PathValue("id"))
+// 	if err != nil {
+// 		if err.Error() == "The requested order already closed" {
+// 			h.logger.Error(err.Error(), "error", err, "method", r.Method, "url", r.URL)
+// 			ErrorHandler.Error(w, err.Error(), http.StatusBadRequest)
+// 			return
+// 		} else {
+// 			h.logger.Error("Something happened when closing order", "error", err, "method", r.Method, "url", r.URL)
+// 			ErrorHandler.Error(w, "Something happened when closing order", http.StatusInternalServerError)
+// 			return
+// 		}
+// 	}
+// 	h.logger.Info("Request handled successfully.", "method", r.Method, "url", r.URL)
+// 	w.WriteHeader(200)
+// }
 
 /*
 		GET /orders/numberOfOrderedItems?startDate={startDate}&endDate={endDate}:

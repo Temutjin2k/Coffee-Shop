@@ -3,6 +3,7 @@ package service
 import (
 	"errors"
 	"fmt"
+	"log"
 	"sort"
 	"strconv"
 	"strings"
@@ -27,17 +28,79 @@ func NewOrderService(orderRepo dal.OrderRepository, menuRepo dal.MenuRepository,
 }
 
 // AddOrder adds a new order to the repository
-func (s *OrderService) AddOrder(order models.Order) error {
-	if order.Items == nil || strings.TrimSpace(order.CustomerName) == "" {
-		return errors.New("something wrong with your requested order")
-	}
-	for _, order := range order.Items {
-		if order.Quantity < 1 {
-			return errors.New("something wrong with your requested order")
-		}
+func (s *OrderService) AddOrder(order models.Order) (models.BatchOrderInfo, error) {
+	if err := validateOrder(order); err != nil {
+		return models.BatchOrderInfo{
+			OrderID:      order.ID,
+			CustomerName: order.CustomerName,
+			Status:       models.StatusOrderRejected,
+			Reason:       err.Error(),
+			Total:        0,
+		}, err
 	}
 
 	return s.orderRepo.Add(order)
+}
+
+//	{
+//	    "processed_orders": [
+//	        {
+//	            "order_id": 123,
+//	            "customer_name": "Alice",
+//	            "status": "accepted",
+//	            "total": 15.50
+//	        },
+//	        {
+//	            "order_id": 124,
+//	            "customer_name": "Bob",
+//	            "status": "rejected",
+//	            "reason": "insufficient_inventory"
+//	        }
+//	    ],
+//	    "summary": {
+//	        "total_orders": 2,
+//	        "accepted": 1,
+//	        "rejected": 1,
+//	        "total_revenue": 15.50,
+//	        "inventory_updates": [
+//	            {
+//	                "ingredient_id": 1,
+//	                "name": "Coffee Beans",
+//	                "quantity_used": 100,
+//	                "remaining": 2400
+//	            }
+//	        ]
+//	    }
+//	}
+
+func (s *OrderService) BulkOrders(orders []models.Order) (models.BatchOrdersResponce, error) {
+	proccesedOrdersInfo := []models.BatchOrderInfo{}
+	summary := models.BatchOrderSummary{
+		TotalOrders: len(orders),
+	}
+	// inventoryUpdates := []models.BatchOrderInventoryUpdate{}
+	for _, order := range orders {
+		orderInfo, err := s.AddOrder(order)
+		if err != nil {
+			log.Printf("Error: %v", err)
+		}
+
+		if orderInfo.Status == "accepted" {
+			summary.Accepted++
+		} else {
+			summary.Rejected++
+		}
+
+		summary.TotalRevenue += orderInfo.Total
+
+		proccesedOrdersInfo = append(proccesedOrdersInfo, orderInfo)
+	}
+
+	result := models.BatchOrdersResponce{
+		Processed_orders: proccesedOrdersInfo,
+		Summary:          summary,
+	}
+	return result, nil
 }
 
 // GetAllOrders retrieves all orders from the repository
@@ -66,13 +129,8 @@ func (s *OrderService) GetOrder(OrderID int) (models.Order, error) {
 
 // UpdateOrder updates an existing order
 func (s *OrderService) UpdateOrder(updatedOrder models.Order, OrderID string) error {
-	if updatedOrder.Items == nil || strings.TrimSpace(updatedOrder.CustomerName) == "" {
-		return errors.New("something wrong with your updated order")
-	}
-	for _, order := range updatedOrder.Items {
-		if order.Quantity < 1 {
-			return errors.New("something wrong with your updated order")
-		}
+	if err := validateOrder(updatedOrder); err != nil {
+		return err
 	}
 	return s.orderRepo.SaveUpdatedOrder(updatedOrder, OrderID)
 }
@@ -201,16 +259,6 @@ func (s *OrderService) GetOrderedItemsByPeriod(period, month, year string) (map[
 	return nil, fmt.Errorf("invalid inputs. Period: %v, Month: %s, Year: %s", period, month, year)
 }
 
-func (s *OrderService) BulkOrders([]models.Order) (interface{}, error) {
-	result := models.BatchOrdersResponce{
-		Processed_orders: []models.BatchProcessedOrders{},
-		Summary: models.BatchOrderSummary{
-			InventoryUpdates: []models.BatchOrderInventoryUpdate{},
-		},
-	}
-	return result, nil
-}
-
 func getMonthNumber(month string) int {
 	months := map[string]int{
 		"january":   1,
@@ -232,4 +280,21 @@ func getMonthNumber(month string) int {
 		return -1
 	}
 	return v
+}
+
+func validateOrder(order models.Order) error {
+	if order.Items == nil {
+		return errors.New("no items provided. Array of items it required")
+	}
+
+	if strings.TrimSpace(order.CustomerName) == "" {
+		return errors.New("customer name is required")
+	}
+	for _, order := range order.Items {
+		if order.Quantity < 1 {
+			return errors.New("quantity a product must be greater than zero")
+		}
+	}
+
+	return nil
 }

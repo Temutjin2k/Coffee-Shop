@@ -1,5 +1,10 @@
 package models
 
+var (
+	StatusOrderAccepted = "accepted"
+	StatusOrderRejected = "rejected"
+)
+
 type Order struct {
 	ID           int                    `json:"order_id"`
 	CustomerName string                 `json:"customer_name"`
@@ -15,15 +20,16 @@ type OrderItem struct {
 }
 
 type BatchOrdersResponce struct {
-	Processed_orders []BatchProcessedOrders `json:"processed_orders"`
-	Summary          BatchOrderSummary      `json:"summary"`
+	Processed_orders []BatchOrderInfo  `json:"processed_orders"`
+	Summary          BatchOrderSummary `json:"summary"`
 }
 
-type BatchProcessedOrders struct {
+type BatchOrderInfo struct {
 	OrderID      int    `json:"order_id"`
 	CustomerName string `json:"customer_name"`
 	Status       string `json:"status"`
 	Reason       string `json:"reason"`
+	Total        int    `json:"total"`
 }
 
 type BatchOrderSummary struct {
