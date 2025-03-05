@@ -47,7 +47,7 @@ func (h *OrderHandler) PostOrder(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	_, err = h.orderService.AddOrder(NewOrder)
+	_, _, err = h.orderService.AddOrder(NewOrder)
 	if err != nil {
 		if err.Error() == "something wrong with your requested order" {
 			h.logger.Error(err.Error(), "error", err, "method", r.Method, "url", r.URL)
@@ -173,9 +173,15 @@ func (h *OrderHandler) DeleteOrder(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *OrderHandler) CloseOrder(w http.ResponseWriter, r *http.Request) {
-	ID := r.PathValue("id")
+	idStr := r.PathValue("id")
+	ID, err := strconv.Atoi(idStr)
+	if err != nil {
+		h.logger.Error("Order id must be integer", "method", r.Method, "url", r.URL)
+		ErrorHandler.Error(w, "Order id must be integer", http.StatusBadRequest)
+		return
+	}
 
-	err := h.orderService.CloseOrder(ID)
+	err = h.orderService.CloseOrder(ID)
 	if err != nil {
 		h.logger.Error("Error closing order", "error", err, "method", r.Method, "url", r.URL)
 		ErrorHandler.Error(w, err.Error(), http.StatusBadRequest)

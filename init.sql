@@ -20,7 +20,7 @@ CREATE TABLE menu_items (
 CREATE TABLE inventory (
     IngredientID SERIAL PRIMARY KEY,
     Name VARCHAR(50) NOT NULL,
-    Quantity INT NOT NULL,
+    Quantity INT NOT NULL CHECK(Quantity >= 0),
     Unit unit_types NOT NULL
 );
 

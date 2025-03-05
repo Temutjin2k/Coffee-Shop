@@ -28,7 +28,7 @@ func NewOrderService(orderRepo dal.OrderRepository, menuRepo dal.MenuRepository,
 }
 
 // AddOrder adds a new order to the repository
-func (s *OrderService) AddOrder(order models.Order) (models.BatchOrderInfo, error) {
+func (s *OrderService) AddOrder(order models.Order) (models.BatchOrderInfo, []models.BatchOrderInventoryUpdate, error) {
 	if err := validateOrder(order); err != nil {
 		return models.BatchOrderInfo{
 			OrderID:      order.ID,
@@ -36,7 +36,7 @@ func (s *OrderService) AddOrder(order models.Order) (models.BatchOrderInfo, erro
 			Status:       models.StatusOrderRejected,
 			Reason:       err.Error(),
 			Total:        0,
-		}, err
+		}, []models.BatchOrderInventoryUpdate{}, err
 	}
 
 	return s.orderRepo.Add(order)
@@ -80,20 +80,24 @@ func (s *OrderService) BulkOrders(orders []models.Order) (models.BatchOrdersResp
 	}
 	// inventoryUpdates := []models.BatchOrderInventoryUpdate{}
 	for _, order := range orders {
-		orderInfo, err := s.AddOrder(order)
+		orderInfo, inventoryInfo, err := s.AddOrder(order)
 		if err != nil {
 			log.Printf("Error: %v", err)
 		}
 
-		if orderInfo.Status == "accepted" {
+		if orderInfo.Status == models.StatusOrderAccepted {
 			summary.Accepted++
 		} else {
 			summary.Rejected++
 		}
-
 		summary.TotalRevenue += orderInfo.Total
-
 		proccesedOrdersInfo = append(proccesedOrdersInfo, orderInfo)
+		summary.InventoryUpdates = append(summary.InventoryUpdates, inventoryInfo...)
+		// Closing the Order
+		err = s.orderRepo.CloseOrderRepo(orderInfo.OrderID)
+		if err != nil {
+			return models.BatchOrdersResponce{}, err
+		}
 	}
 
 	result := models.BatchOrdersResponce{
@@ -160,7 +164,7 @@ func (s *OrderService) GetPopularItems(popularItemsNum int) (models.PopularItems
 	}
 
 	// Should return sorted decreasing array
-	itemMap := make(map[string]int)
+	itemMap := make(map[int]int)
 	for _, order := range existingOrders {
 		for _, item := range order.Items {
 			itemMap[item.ProductID] += item.Quantity
@@ -190,7 +194,7 @@ func (s *OrderService) DeleteOrderByID(OrderID int) error {
 	return s.orderRepo.DeleteOrder(OrderID)
 }
 
-func (s *OrderService) CloseOrder(OrderID string) error {
+func (s *OrderService) CloseOrder(OrderID int) error {
 	return s.orderRepo.CloseOrderRepo(OrderID)
 }
 
@@ -275,7 +279,7 @@ func getMonthNumber(month string) int {
 		"december":  12,
 	}
 
-	v, ok := months[month]
+	v, ok := months[strings.ToLower(month)]
 	if !ok {
 		return -1
 	}

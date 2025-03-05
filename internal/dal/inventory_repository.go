@@ -38,7 +38,7 @@ func (repo *InventoryRepository) GetAll() ([]models.InventoryItem, error) {
 	return InventoryItems, nil
 }
 
-func (repo *InventoryRepository) Exists(ID string) bool {
+func (repo *InventoryRepository) Exists(ID int) bool {
 	queryIfExists := `
 	select IngredientID from inventory where IngredientID = $1
 	`
@@ -49,7 +49,7 @@ func (repo *InventoryRepository) Exists(ID string) bool {
 	return rows.Next()
 }
 
-func (repo *InventoryRepository) SubtractIngredients(ingredients map[string]float64) error {
+func (repo *InventoryRepository) SubtractIngredients(ingredients map[int]float64) error {
 	for key, value := range ingredients {
 		queryToSubtract := `
 	        update inventory
@@ -76,7 +76,7 @@ func (repo *InventoryRepository) AddInventoryItemRepo(item models.InventoryItem)
 	return nil
 }
 
-func (repo *InventoryRepository) UpdateItemRepo(id string, newItem models.InventoryItem) error {
+func (repo *InventoryRepository) UpdateItemRepo(id int, newItem models.InventoryItem) error {
 	queryToUpdate := `
 	update inventory
 	set Quantity = $1, set Name = $2, set Unit = $3
@@ -89,7 +89,7 @@ func (repo *InventoryRepository) UpdateItemRepo(id string, newItem models.Invent
 	return nil
 }
 
-func (repo *InventoryRepository) DeleteItemRepo(id string) error {
+func (repo *InventoryRepository) DeleteItemRepo(id int) error {
 	queryToDelete := `
 	delete from inventory
 	where ID = $1

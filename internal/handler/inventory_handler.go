@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"strconv"
 
 	"hot-coffee/internal/ErrorHandler"
 	"hot-coffee/internal/service"
@@ -69,7 +70,14 @@ func (h *InventoryHandler) GetInventory(w http.ResponseWriter, r *http.Request) 
 }
 
 func (h *InventoryHandler) GetInventoryItem(w http.ResponseWriter, r *http.Request) {
-	id := r.PathValue("id")
+	idStr := r.PathValue("id")
+
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		h.logger.Error("Inventory id must be integer", "method", r.Method, "url", r.URL)
+		ErrorHandler.Error(w, "Inventory id must be integer", http.StatusBadRequest)
+		return
+	}
 
 	if !h.inventoryService.Exists(id) {
 		h.logger.Error("Inventory item does not exists", "method", r.Method, "url", r.URL)
@@ -105,13 +113,20 @@ func (h *InventoryHandler) PutInventoryItem(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	if newItem.Name == "" || newItem.IngredientID == "" || newItem.Unit == "" || newItem.Quantity <= 0 {
+	if newItem.Name == "" || newItem.Unit == "" || newItem.Quantity <= 0 {
 		h.logger.Error("Some fields are empty", "method", r.Method, "url", r.URL)
 		ErrorHandler.Error(w, "Some fields are empty, equal or less than zero", http.StatusBadRequest)
 		return
 	}
 
-	id := r.PathValue("id")
+	idStr := r.PathValue("id")
+
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		h.logger.Error("Inventory id must be integer", "method", r.Method, "url", r.URL)
+		ErrorHandler.Error(w, "Inventory id must be integer", http.StatusBadRequest)
+		return
+	}
 
 	if !h.inventoryService.Exists(id) {
 		h.logger.Error("Inventory item does not exists", "method", r.Method, "url", r.URL)
@@ -130,7 +145,14 @@ func (h *InventoryHandler) PutInventoryItem(w http.ResponseWriter, r *http.Reque
 }
 
 func (h *InventoryHandler) DeleteInventoryItem(w http.ResponseWriter, r *http.Request) {
-	id := r.PathValue("id")
+	idStr := r.PathValue("id")
+
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		h.logger.Error("Inventory id must be integer", "method", r.Method, "url", r.URL)
+		ErrorHandler.Error(w, "Inventory id must be integer", http.StatusBadRequest)
+		return
+	}
 
 	if !h.inventoryService.Exists(id) {
 		h.logger.Error("Inventory item does not exists", "method", r.Method, "url", r.URL)
@@ -138,7 +160,7 @@ func (h *InventoryHandler) DeleteInventoryItem(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	err := h.inventoryService.DeleteItem(id)
+	err = h.inventoryService.DeleteItem(id)
 	if err != nil {
 		h.logger.Error("Could not delete inventory item", "error", err, "method", r.Method, "url", r.URL)
 		ErrorHandler.Error(w, "Could not delete inventory item", http.StatusInternalServerError)

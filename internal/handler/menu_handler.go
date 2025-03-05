@@ -7,6 +7,7 @@ import (
 	"hot-coffee/models"
 	"log/slog"
 	"net/http"
+	"strconv"
 )
 
 type MenuHandler struct {
@@ -72,7 +73,16 @@ func (h *MenuHandler) GetMenu(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *MenuHandler) GetMenuItem(w http.ResponseWriter, r *http.Request) {
-	MenuItem, err := h.menuService.GetMenuItem(r.PathValue("id"))
+	idStr := r.PathValue("id")
+
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		h.logger.Error("Menu id must be integer", "method", r.Method, "url", r.URL)
+		ErrorHandler.Error(w, "Menu id must be integer", http.StatusBadRequest)
+		return
+	}
+
+	MenuItem, err := h.menuService.GetMenuItem(id)
 	if err != nil {
 		if err.Error() == "could not find menu item by the given id" {
 			h.logger.Error(err.Error(), "error", err, "method", r.Method, "url", r.URL)
@@ -96,7 +106,15 @@ func (h *MenuHandler) GetMenuItem(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *MenuHandler) PutMenuItem(w http.ResponseWriter, r *http.Request) {
-	err := h.menuService.MenuCheckByID(r.PathValue("id"), true)
+	idStr := r.PathValue("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		h.logger.Error("Menu id must be integer", "method", r.Method, "url", r.URL)
+		ErrorHandler.Error(w, "Menu id must be integer", http.StatusBadRequest)
+		return
+	}
+
+	err = h.menuService.MenuCheckByID(id, true)
 	if err != nil {
 		h.logger.Error(err.Error(), "error", err, "method", r.Method, "url", r.URL)
 		ErrorHandler.Error(w, err.Error(), http.StatusInternalServerError)
@@ -109,7 +127,7 @@ func (h *MenuHandler) PutMenuItem(w http.ResponseWriter, r *http.Request) {
 		ErrorHandler.Error(w, "Could not read requested menu item", http.StatusInternalServerError)
 		return
 	}
-	RequestedMenuItem.ID = r.PathValue("id")
+	RequestedMenuItem.ID = id
 
 	err = h.menuService.CheckNewMenu(RequestedMenuItem)
 	if err != nil {
@@ -135,13 +153,15 @@ func (h *MenuHandler) PutMenuItem(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *MenuHandler) DeleteMenuItem(w http.ResponseWriter, r *http.Request) {
-	err := h.menuService.MenuCheckByID(r.PathValue("id"), true)
+	idStr := r.PathValue("id")
+	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		h.logger.Error(err.Error(), "error", err, "method", r.Method, "url", r.URL)
-		ErrorHandler.Error(w, err.Error(), http.StatusInternalServerError)
+		h.logger.Error("Menu id must be integer", "method", r.Method, "url", r.URL)
+		ErrorHandler.Error(w, "Menu id must be integer", http.StatusBadRequest)
 		return
 	}
-	err = h.menuService.DeleteMenuItem(r.PathValue("id"))
+
+	err = h.menuService.DeleteMenuItem(id)
 	if err != nil {
 		h.logger.Error("Could not delete menu item", "error", err, "method", r.Method, "url", r.URL)
 		ErrorHandler.Error(w, "Could not delete menu item", http.StatusInternalServerError)

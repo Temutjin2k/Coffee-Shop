@@ -15,8 +15,8 @@ type Order struct {
 }
 
 type OrderItem struct {
-	ProductID string `json:"product_id"`
-	Quantity  int    `json:"quantity"`
+	ProductID int `json:"product_id"`
+	Quantity  int `json:"quantity"`
 }
 
 type BatchOrdersResponce struct {
@@ -25,18 +25,18 @@ type BatchOrdersResponce struct {
 }
 
 type BatchOrderInfo struct {
-	OrderID      int    `json:"order_id"`
-	CustomerName string `json:"customer_name"`
-	Status       string `json:"status"`
-	Reason       string `json:"reason"`
-	Total        int    `json:"total"`
+	OrderID      int     `json:"order_id"`
+	CustomerName string  `json:"customer_name"`
+	Status       string  `json:"status"`
+	Reason       string  `json:"reason"`
+	Total        float64 `json:"total"`
 }
 
 type BatchOrderSummary struct {
 	TotalOrders      int                         `json:"total_orders"`
 	Accepted         int                         `json:"accepted"`
 	Rejected         int                         `json:"rejected"`
-	TotalRevenue     int                         `json:"total_revenue"`
+	TotalRevenue     float64                     `json:"total_revenue"`
 	InventoryUpdates []BatchOrderInventoryUpdate `json:"inventory_updates"`
 }
 

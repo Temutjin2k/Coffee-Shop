@@ -16,7 +16,7 @@ func NewMenuService(menuRepo dal.MenuRepository, inventoryRepo dal.InventoryRepo
 	return &MenuService{menuRepo: menuRepo, inventoryRepo: inventoryRepo}
 }
 
-func (s *MenuService) DeleteMenuItem(MenuItemID string) error {
+func (s *MenuService) DeleteMenuItem(MenuItemID int) error {
 	return s.menuRepo.DeleteMenuItemRepo(MenuItemID)
 }
 
@@ -24,7 +24,7 @@ func (s *MenuService) UpdateMenuItem(menuItem models.MenuItem) error {
 	return s.menuRepo.UpdateMenuItemRepo(menuItem)
 }
 
-func (s *MenuService) MenuCheckByID(MenuItemID string, isDelete bool) error {
+func (s *MenuService) MenuCheckByID(MenuItemID int, isDelete bool) error {
 	if isDelete {
 		flag := false
 		if s.menuRepo.MenuCheckByIDRepo(MenuItemID) {
@@ -42,9 +42,9 @@ func (s *MenuService) MenuCheckByID(MenuItemID string, isDelete bool) error {
 	return nil
 }
 
-func (s *MenuService) IngredientsCheckByID(menuItemID string, quantity int) error {
+func (s *MenuService) IngredientsCheckByID(menuItemID int, quantity int) error {
 	menuItems, _ := s.menuRepo.GetAll()
-	ingredientsNeeded := make(map[string]float64)
+	ingredientsNeeded := make(map[int]float64)
 	flag := false
 	for _, item := range menuItems {
 		if item.ID == menuItemID {
@@ -89,12 +89,12 @@ func (s *MenuService) IngredientsCheckForNewItem(menuItem models.MenuItem) error
 	return nil
 }
 
-func (s *MenuService) SubtractIngredientsByID(OrderID string, quantity int) error {
+func (s *MenuService) SubtractIngredientsByID(OrderID int, quantity int) error {
 	if err := s.IngredientsCheckByID(OrderID, quantity); err != nil {
 		return errors.New("not enough ingredients or needed ingredients do not exist")
 	}
 
-	ingredients := make(map[string]float64)
+	ingredients := make(map[int]float64)
 	menuItems, _ := s.menuRepo.GetAll()
 
 	for _, item := range menuItems {
@@ -112,7 +112,7 @@ func (s *MenuService) AddMenuItem(menuItem models.MenuItem) error {
 	return s.menuRepo.AddMenuItemRepo(menuItem)
 }
 
-func (s *MenuService) GetMenuItem(MenuItemID string) (models.MenuItem, error) {
+func (s *MenuService) GetMenuItem(MenuItemID int) (models.MenuItem, error) {
 	MenuItems, err := s.menuRepo.GetAll()
 	if err != nil {
 		return models.MenuItem{}, err
@@ -134,9 +134,9 @@ func (s *MenuService) GetMenuItems() ([]models.MenuItem, error) {
 }
 
 func (s *MenuService) CheckNewMenu(MenuItem models.MenuItem) error {
-	if strings.TrimSpace(MenuItem.ID) == "" {
-		return errors.New("new menu item's ID is empty")
-	}
+	// if strings.TrimSpace(MenuItem.ID) == "" {
+	// 	return errors.New("new menu item's ID is empty")
+	// }
 	if strings.TrimSpace(MenuItem.Name) == "" {
 		return errors.New("new menu item's Name is empty")
 	}
@@ -147,9 +147,9 @@ func (s *MenuService) CheckNewMenu(MenuItem models.MenuItem) error {
 		return errors.New("new menu item's Price is awkward")
 	}
 	for _, ingredient := range MenuItem.Ingredients {
-		if strings.TrimSpace(ingredient.IngredientID) == "" {
-			return errors.New("new menu item's ingredient is empty")
-		}
+		// if strings.TrimSpace(ingredient.IngredientID) == "" {
+		// 	return errors.New("new menu item's ingredient is empty")
+		// }
 		if ingredient.Quantity < 0 {
 			return errors.New("new menu item's quantity is awkward")
 		}

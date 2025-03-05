@@ -46,7 +46,7 @@ func (repo *MenuRepository) GetAll() ([]models.MenuItem, error) {
 	return MenuItems, nil
 }
 
-func (repo *MenuRepository) Exists(itemID string) bool {
+func (repo *MenuRepository) Exists(itemID int) bool {
 	items, _ := repo.GetAll()
 	for _, item := range items {
 		if item.ID == itemID {
@@ -56,7 +56,7 @@ func (repo *MenuRepository) Exists(itemID string) bool {
 	return false
 }
 
-func (repo *MenuRepository) DeleteMenuItemRepo(MenuItemID string) error {
+func (repo *MenuRepository) DeleteMenuItemRepo(MenuItemID int) error {
 	queryDeleteMenuItem := `
 	delete from menu_items
 	where ID = $1
@@ -123,7 +123,7 @@ func (repo *MenuRepository) AddMenuItemRepo(menuItem models.MenuItem) error {
 	return nil
 }
 
-func (repo *MenuRepository) MenuCheckByIDRepo(ID string) bool {
+func (repo *MenuRepository) MenuCheckByIDRepo(ID int) bool {
 	queryIfExists := `
 	select ID from menu_items where ID = $1
 	`

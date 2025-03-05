@@ -19,17 +19,17 @@ func NewOrderRepository(db *sql.DB) *OrderRepository {
 	return &OrderRepository{db: db}
 }
 
-func (repo *OrderRepository) Add(order models.Order) (models.BatchOrderInfo, error) {
+func (repo *OrderRepository) Add(order models.Order) (models.BatchOrderInfo, []models.BatchOrderInventoryUpdate, error) {
 	processInfo := models.BatchOrderInfo{
-		OrderID:      order.ID,
 		CustomerName: order.CustomerName,
 		Status:       models.StatusOrderRejected,
 	}
+	inventoryInfo := []models.BatchOrderInventoryUpdate{}
 
 	tx, err := repo.db.Begin()
 	if err != nil {
 		processInfo.Reason = "internal server error. Failed to start transaction."
-		return processInfo, err
+		return processInfo, inventoryInfo, err
 	}
 
 	defer func() {
@@ -48,8 +48,9 @@ func (repo *OrderRepository) Add(order models.Order) (models.BatchOrderInfo, err
 	err = tx.QueryRow(queryOrder, order.CustomerName).Scan(&ID)
 	if err != nil {
 		processInfo.Reason = "internal server error. Failed to scan ID"
-		return processInfo, err
+		return processInfo, inventoryInfo, err
 	}
+	processInfo.OrderID = ID
 
 	// Inserting order items. in case when same product id is given, it check on conflict, if so it's just adding quantity for previus row.
 	queryOrderItems := `
@@ -59,22 +60,114 @@ func (repo *OrderRepository) Add(order models.Order) (models.BatchOrderInfo, err
 		DO UPDATE SET Quantity = order_items.Quantity + EXCLUDED.Quantity;
 	`
 
+	// Getting price of menu item
+	queryGetPrice := `
+		SELECT price FROM menu_items WHERE id = $1
+	`
+
 	for _, v := range order.Items {
 		_, err = tx.Exec(queryOrderItems, v.ProductID, v.Quantity, ID)
 		if err != nil {
-			processInfo.Reason = "internal server error."
-			return processInfo, err
+			processInfo.Reason = "internal server error. " + err.Error()
+			processInfo.Total = 0
+			return processInfo, inventoryInfo, err
+		}
+
+		var price float64
+		err = tx.QueryRow(queryGetPrice, v.ProductID).Scan(&price)
+		if err != nil {
+			processInfo.Reason = "internal server error." + err.Error()
+			processInfo.Total = 0
+			return processInfo, inventoryInfo, err
+		}
+		processInfo.Total += float64(v.Quantity) * price
+	}
+
+	// Reducing ingredients from inventory
+	queryGetIngredients := `
+	SELECT IngredientID, Quantity FROM menu_item_ingredients WHERE MenuID = $1
+`
+
+	queryUpdateInventory := `
+	UPDATE inventory SET Quantity = Quantity - $1 WHERE IngredientID = $2 AND Quantity >= $1
+`
+
+	for _, v := range order.Items {
+		// Загружаем все ингредиенты перед обработкой
+		var ingredients []struct {
+			IngredientID     int
+			RequiredQuantity int
+		}
+
+		rows, err := tx.Query(queryGetIngredients, v.ProductID)
+		if err != nil {
+			processInfo.Reason = "internal server error. Failed to get ingredients."
+			processInfo.Total = 0
+			return processInfo, inventoryInfo, err
+		}
+		defer rows.Close()
+
+		for rows.Next() {
+			var ingredient struct {
+				IngredientID     int
+				RequiredQuantity int
+			}
+			if err := rows.Scan(&ingredient.IngredientID, &ingredient.RequiredQuantity); err != nil {
+				processInfo.Reason = "internal server error. Failed to scan ingredient."
+				processInfo.Total = 0
+				return processInfo, inventoryInfo, err
+			}
+			ingredients = append(ingredients, ingredient)
+		}
+
+		// Проверяем и обновляем инвентарь
+		for _, ing := range ingredients {
+			totalRequired := ing.RequiredQuantity * v.Quantity
+
+			var availableQuantity int
+			var InvName string
+
+			err = tx.QueryRow("SELECT quantity, name FROM inventory WHERE IngredientID = $1", ing.IngredientID).Scan(&availableQuantity, &InvName)
+			if err != nil {
+				processInfo.Reason = fmt.Sprintf("internal server error. Failed to check inventory. ID=%d", ing.IngredientID)
+				processInfo.Total = 0
+				return processInfo, inventoryInfo, err
+			}
+
+			if availableQuantity < totalRequired {
+				processInfo.Reason = fmt.Sprintf("insufficient_inventory. IngredientID: %d. Required: %d, Available: %d", ing.IngredientID, totalRequired, availableQuantity)
+				processInfo.Total = 0
+				return processInfo, inventoryInfo, fmt.Errorf(processInfo.Reason)
+			}
+
+			// Обновляем инвентарь
+			_, err = tx.Exec(queryUpdateInventory, totalRequired, ing.IngredientID)
+			if err != nil {
+				processInfo.Reason = "internal server error. Failed to update inventory."
+				processInfo.Total = 0
+				return processInfo, inventoryInfo, err
+			}
+
+			InvInfo := models.BatchOrderInventoryUpdate{
+				IngredientID:  ing.IngredientID,
+				Name:          InvName,
+				Quantity_used: totalRequired,
+				Remaining:     availableQuantity - totalRequired,
+			}
+			inventoryInfo = append(inventoryInfo, InvInfo)
 		}
 	}
 
 	// Commiting transaction
 	err = tx.Commit()
 	if err != nil {
-		return models.BatchOrderInfo{}, err
+		processInfo.Reason = "Internal server error. Error commiting transaction."
+		processInfo.Total = 0
+		return processInfo, inventoryInfo, err
 	}
-	processInfo.Reason = models.StatusOrderAccepted
-
-	return processInfo, nil
+	processInfo.Status = models.StatusOrderAccepted
+	processInfo.Reason = "OK"
+	return processInfo, inventoryInfo, nil
 }
 
 func (repo *OrderRepository) GetAll() ([]models.Order, error) {
@@ -196,7 +289,7 @@ func (repo *OrderRepository) DeleteOrder(OrderID int) error {
 	return tx.Commit()
 }
 
-func (repo *OrderRepository) CloseOrderRepo(id string) error {
+func (repo *OrderRepository) CloseOrderRepo(id int) error {
 	// Check current order status
 	var status string
 	queryCheckStatus := `
@@ -205,13 +298,13 @@ func (repo *OrderRepository) CloseOrderRepo(id string) error {
 	err := repo.db.QueryRow(queryCheckStatus, id).Scan(&status)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return fmt.Errorf("order with ID %s not found", id)
+			return fmt.Errorf("order with ID %d not found", id)
 		}
 		return err
 	}
 
 	if status == "closed" {
-		return fmt.Errorf("order with ID %s is already closed", id)
+		return fmt.Errorf("order with ID %d is already closed", id)
 	}
 
 	// Update order status to "closed"

@@ -28,7 +28,7 @@ func (s *InventoryService) GetAllInventoryItems() ([]models.InventoryItem, error
 	return items, nil
 }
 
-func (s *InventoryService) GetItem(id string) (models.InventoryItem, error) {
+func (s *InventoryService) GetItem(id int) (models.InventoryItem, error) {
 	items, err := s.inventoryRepo.GetAll()
 	if err != nil {
 		return models.InventoryItem{}, err
@@ -42,21 +42,21 @@ func (s *InventoryService) GetItem(id string) (models.InventoryItem, error) {
 	return models.InventoryItem{}, errors.New("inventory item does not exists")
 }
 
-func (s *InventoryService) UpdateItem(id string, newItem models.InventoryItem) error {
+func (s *InventoryService) UpdateItem(id int, newItem models.InventoryItem) error {
 	if !s.inventoryRepo.Exists(id) {
 		return errors.New("inventory item does not exists")
 	}
 	return s.inventoryRepo.UpdateItemRepo(id, newItem)
 }
 
-func (s *InventoryService) DeleteItem(id string) error {
+func (s *InventoryService) DeleteItem(id int) error {
 	if !s.inventoryRepo.Exists(id) {
 		return errors.New("inventory item does not exists")
 	}
 	return s.inventoryRepo.DeleteItemRepo(id)
 }
 
-func (s *InventoryService) Exists(id string) bool {
+func (s *InventoryService) Exists(id int) bool {
 	return s.inventoryRepo.Exists(id)
 }
 
