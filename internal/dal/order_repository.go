@@ -24,12 +24,11 @@ func (repo *OrderRepository) Add(order models.Order) (models.BatchOrderInfo, []m
 		CustomerName: order.CustomerName,
 		Status:       models.StatusOrderRejected,
 	}
-	inventoryInfo := []models.BatchOrderInventoryUpdate{}
 
 	tx, err := repo.db.Begin()
 	if err != nil {
 		processInfo.Reason = "internal server error. Failed to start transaction."
-		return processInfo, inventoryInfo, err
+		return processInfo, []models.BatchOrderInventoryUpdate{}, err
 	}
 
 	defer func() {
@@ -48,7 +47,7 @@ func (repo *OrderRepository) Add(order models.Order) (models.BatchOrderInfo, []m
 	err = tx.QueryRow(queryOrder, order.CustomerName).Scan(&ID)
 	if err != nil {
 		processInfo.Reason = "internal server error. Failed to scan ID"
-		return processInfo, inventoryInfo, err
+		return processInfo, []models.BatchOrderInventoryUpdate{}, err
 	}
 	processInfo.OrderID = ID
 
@@ -65,12 +64,23 @@ func (repo *OrderRepository) Add(order models.Order) (models.BatchOrderInfo, []m
 		SELECT price FROM menu_items WHERE id = $1
 	`
 
+	// Reducing ingredients from inventory
+	queryGetIngredients := `
+		SELECT IngredientID, Quantity FROM menu_item_ingredients WHERE MenuID = $1
+	`
+
+	queryUpdateInventory := `
+		UPDATE inventory SET Quantity = Quantity - $1 WHERE IngredientID = $2 AND Quantity >= $1
+	`
+	// InventoryUpdatesInfo
+	inventoryInfo := []models.BatchOrderInventoryUpdate{}
 	for _, v := range order.Items {
+
 		_, err = tx.Exec(queryOrderItems, v.ProductID, v.Quantity, ID)
 		if err != nil {
 			processInfo.Reason = "internal server error. " + err.Error()
 			processInfo.Total = 0
-			return processInfo, inventoryInfo, err
+			return processInfo, []models.BatchOrderInventoryUpdate{}, err
 		}
 
 		var price float64
@@ -78,21 +88,10 @@ func (repo *OrderRepository) Add(order models.Order) (models.BatchOrderInfo, []m
 		if err != nil {
 			processInfo.Reason = "internal server error." + err.Error()
 			processInfo.Total = 0
-			return processInfo, inventoryInfo, err
+			return processInfo, []models.BatchOrderInventoryUpdate{}, err
 		}
 		processInfo.Total += float64(v.Quantity) * price
-	}
 
-	// Reducing ingredients from inventory
-	queryGetIngredients := `
-	SELECT IngredientID, Quantity FROM menu_item_ingredients WHERE MenuID = $1
-`
-
-	queryUpdateInventory := `
-	UPDATE inventory SET Quantity = Quantity - $1 WHERE IngredientID = $2 AND Quantity >= $1
-`
-
-	for _, v := range order.Items {
 		// Загружаем все ингредиенты перед обработкой
 		var ingredients []struct {
 			IngredientID     int
@@ -103,7 +102,7 @@ func (repo *OrderRepository) Add(order models.Order) (models.BatchOrderInfo, []m
 		if err != nil {
 			processInfo.Reason = "internal server error. Failed to get ingredients."
 			processInfo.Total = 0
-			return processInfo, inventoryInfo, err
+			return processInfo, []models.BatchOrderInventoryUpdate{}, err
 		}
 		defer rows.Close()
 
@@ -115,11 +114,12 @@ func (repo *OrderRepository) Add(order models.Order) (models.BatchOrderInfo, []m
 			if err := rows.Scan(&ingredient.IngredientID, &ingredient.RequiredQuantity); err != nil {
 				processInfo.Reason = "internal server error. Failed to scan ingredient."
 				processInfo.Total = 0
-				return processInfo, inventoryInfo, err
+				return processInfo, []models.BatchOrderInventoryUpdate{}, err
 			}
 			ingredients = append(ingredients, ingredient)
 		}
 
+		fmt.Println("r9")
 		// Проверяем и обновляем инвентарь
 		for _, ing := range ingredients {
 			totalRequired := ing.RequiredQuantity * v.Quantity
@@ -131,21 +131,22 @@ func (repo *OrderRepository) Add(order models.Order) (models.BatchOrderInfo, []m
 			if err != nil {
 				processInfo.Reason = fmt.Sprintf("internal server error. Failed to check inventory. ID=%d", ing.IngredientID)
 				processInfo.Total = 0
-				return processInfo, inventoryInfo, err
+				return processInfo, []models.BatchOrderInventoryUpdate{}, err
 			}
 
 			if availableQuantity < totalRequired {
 				processInfo.Reason = fmt.Sprintf("insufficient_inventory. IngredientID: %d. Required: %d, Available: %d", ing.IngredientID, totalRequired, availableQuantity)
 				processInfo.Total = 0
-				return processInfo, inventoryInfo, fmt.Errorf(processInfo.Reason)
+				return processInfo, []models.BatchOrderInventoryUpdate{}, fmt.Errorf(processInfo.Reason)
 			}
 
 			// Обновляем инвентарь
+			fmt.Println(queryUpdateInventory, totalRequired, ing.IngredientID)
 			_, err = tx.Exec(queryUpdateInventory, totalRequired, ing.IngredientID)
 			if err != nil {
 				processInfo.Reason = "internal server error. Failed to update inventory."
 				processInfo.Total = 0
-				return processInfo, inventoryInfo, err
+				return processInfo, []models.BatchOrderInventoryUpdate{}, err
 			}
 
 			InvInfo := models.BatchOrderInventoryUpdate{
@@ -158,6 +159,7 @@ func (repo *OrderRepository) Add(order models.Order) (models.BatchOrderInfo, []m
 		}
 	}
 
+	fmt.Println("r10")
 	// Commiting transaction
 	err = tx.Commit()
 	if err != nil {
@@ -298,13 +300,13 @@ func (repo *OrderRepository) CloseOrderRepo(id int) error {
 	err := repo.db.QueryRow(queryCheckStatus, id).Scan(&status)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return fmt.Errorf("order with ID %d not found", id)
+			return models.ErrOrderNotFound
 		}
 		return err
 	}
 
 	if status == "closed" {
-		return fmt.Errorf("order with ID %d is already closed", id)
+		return models.ErrOrderClosed
 	}
 
 	// Update order status to "closed"

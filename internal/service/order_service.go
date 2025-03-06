@@ -78,26 +78,44 @@ func (s *OrderService) BulkOrders(orders []models.Order) (models.BatchOrdersResp
 	summary := models.BatchOrderSummary{
 		TotalOrders: len(orders),
 	}
-	// inventoryUpdates := []models.BatchOrderInventoryUpdate{}
+
+	invCheckMap := make(map[int]models.BatchOrderInventoryUpdate)
 	for _, order := range orders {
 		orderInfo, inventoryInfo, err := s.AddOrder(order)
 		if err != nil {
 			log.Printf("Error: %v", err)
 		}
 
+		// Counting accepted and rejected orders
 		if orderInfo.Status == models.StatusOrderAccepted {
 			summary.Accepted++
 		} else {
 			summary.Rejected++
 		}
-		summary.TotalRevenue += orderInfo.Total
+		summary.TotalRevenue += orderInfo.Total // Total revenue
 		proccesedOrdersInfo = append(proccesedOrdersInfo, orderInfo)
-		summary.InventoryUpdates = append(summary.InventoryUpdates, inventoryInfo...)
+
+		// summary.InventoryUpdates = append(summary.InventoryUpdates, inventoryInfo...)
+		for _, v := range inventoryInfo {
+			if value, ok := invCheckMap[v.IngredientID]; ok {
+				v.Quantity_used += value.Quantity_used
+				invCheckMap[v.IngredientID] = v
+			} else {
+				invCheckMap[v.IngredientID] = v
+			}
+
+		}
+
 		// Closing the Order
 		err = s.orderRepo.CloseOrderRepo(orderInfo.OrderID)
-		if err != nil {
+		if err != nil && err != models.ErrOrderNotFound {
 			return models.BatchOrdersResponce{}, err
 		}
+	}
+
+	// Filling InventoryUpdates by map
+	for _, val := range invCheckMap {
+		summary.InventoryUpdates = append(summary.InventoryUpdates, val)
 	}
 
 	result := models.BatchOrdersResponce{

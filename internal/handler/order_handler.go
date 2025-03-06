@@ -290,7 +290,7 @@ func (h *OrderHandler) BatchOrders(w http.ResponseWriter, r *http.Request) {
 	ordersReport, err := h.orderService.BulkOrders(request.Orders)
 	if err != nil {
 		h.logger.Error("Error proccing orders", "error", err, "method", r.Method, "url", r.URL)
-		ErrorHandler.Error(w, "Error proccing orders", http.StatusBadRequest)
+		ErrorHandler.Error(w, "Error proccing orders. "+err.Error(), http.StatusBadRequest)
 		return
 	}
 
