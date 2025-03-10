@@ -28,6 +28,9 @@ func NewAggregationService(searchRepo dal.ReportRespository) *AggregationService
 func (s *AggregationServiceImpl) Search(searchQuery string, minPrice, maxPrice int, filter string) (models.SearchResult, error) {
 	var err error
 
+	if searchQuery == "" {
+		return models.SearchResult{}, ErrSearchRequired
+	}
 	if minPrice < -1 || maxPrice < -1 {
 		return models.SearchResult{}, ErrPriceNotPositive
 	}
@@ -41,15 +44,15 @@ func (s *AggregationServiceImpl) Search(searchQuery string, minPrice, maxPrice i
 	if isMenu {
 		menuItems, err = s.searchRepo.SearchMenuItems(searchQuery, minPrice, maxPrice)
 		if err != nil {
-			return models.SearchResult{}, nil
+			return models.SearchResult{}, err
 		}
 	}
 
 	var orders []models.SearchOrderResult
 	if isOrders {
-		orders, err = s.searchRepo.SearchOrders(searchQuery, minPrice, maxPrice)
+		orders, err = s.searchRepo.SearchOrders(searchQuery)
 		if err != nil {
-			return models.SearchResult{}, nil
+			return models.SearchResult{}, err
 		}
 	}
 

@@ -4,10 +4,13 @@ import (
 	"database/sql"
 	"fmt"
 	"hot-coffee/models"
+	"math"
+
+	"github.com/lib/pq"
 )
 
 type ReportRespository interface {
-	SearchOrders(searchQuery string, minPrice, maxPrice int) ([]models.SearchOrderResult, error)
+	SearchOrders(searchQuery string) ([]models.SearchOrderResult, error)
 	SearchMenuItems(searchQuery string, minPrice, maxPrice int) ([]models.SearchMenuItem, error)
 }
 
@@ -19,8 +22,40 @@ func NewReportRespository(db *sql.DB) *ReportRespositoryImpl {
 	return &ReportRespositoryImpl{db: db}
 }
 
-func (repo *ReportRespositoryImpl) SearchOrders(searchQuery string, minPrice, maxPrice int) ([]models.SearchOrderResult, error) {
-	return nil, nil
+func (repo *ReportRespositoryImpl) SearchOrders(searchQuery string) ([]models.SearchOrderResult, error) {
+	query := `
+		SELECT 
+			ord.ID, 
+			ord.CustomerName, 
+			ARRAY_AGG(mi.Name) AS items, 
+			SUM(mi.Price) AS total,
+			ts_rank(
+				to_tsvector(ord.CustomerName || ' ' || STRING_AGG(mi.Name, ' ')), 
+				websearch_to_tsquery($1)
+			) AS relevance
+		FROM orders ord
+		JOIN order_items oi ON ord.ID = oi.OrderID
+		JOIN menu_items mi ON oi.ProductID = mi.ID
+		GROUP BY ord.ID, ord.CustomerName
+		HAVING to_tsvector(ord.CustomerName || ' ' || STRING_AGG(mi.Name, ' ')) @@ websearch_to_tsquery($1)
+		ORDER BY relevance DESC;
+	`
+
+	rows, err := repo.db.Query(query, searchQuery)
+	if err != nil {
+		return nil, fmt.Errorf("error searching %v in orders: %v", searchQuery, err)
+	}
+
+	var result []models.SearchOrderResult
+	for rows.Next() {
+		var item models.SearchOrderResult
+		if err := rows.Scan(&item.ID, &item.CustomerName, pq.Array(&item.Items), &item.Total, &item.Relevance); err != nil {
+			return nil, err
+		}
+		item.Relevance = math.Round(item.Relevance*100) / 100
+		result = append(result, item)
+	}
+	return result, nil
 }
 
 func (repo *ReportRespositoryImpl) SearchMenuItems(searchQuery string, minPrice, maxPrice int) ([]models.SearchMenuItem, error) {
@@ -61,6 +96,7 @@ func (repo *ReportRespositoryImpl) SearchMenuItems(searchQuery string, minPrice,
 		if err := rows.Scan(&item.ID, &item.Name, &item.Description, &item.Price, &item.Relevance); err != nil {
 			return nil, err
 		}
+		item.Relevance = math.Round(item.Relevance*100) / 100
 		result = append(result, item)
 	}
 

@@ -24,7 +24,7 @@ type SearchMenuItem struct {
 
 type SearchOrderResult struct {
 	ID           int      `json:"id"`
-	CustomerName int      `json:"customer_name"`
+	CustomerName string   `json:"customer_name"`
 	Items        []string `json:"items"`
 	Total        float64  `json:"total"`
 	Relevance    float64  `json:"relavance"`
