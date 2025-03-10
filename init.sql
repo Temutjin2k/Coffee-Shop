@@ -90,19 +90,12 @@ CREATE INDEX idx_orders_created_at ON orders (CreatedAt);
 CREATE INDEX idx_order_items_order_id ON order_items (OrderID);
 CREATE INDEX idx_order_items_product_id ON order_items (ProductID);
 
--- price_history
-CREATE INDEX idx_price_history_menu_item_id ON price_history (Menu_ItemID);
-
 -- menu_item_ingredients
 CREATE INDEX idx_menu_item_ingredients_menu_id ON menu_item_ingredients (MenuID);
 CREATE INDEX idx_menu_item_ingredients_ingredient_id ON menu_item_ingredients (IngredientID);
 
--- order_status_history
-CREATE INDEX idx_order_status_history_order_id ON order_status_history (OrderID);
-
--- inventory_transactions
-CREATE INDEX idx_inventory_transactions_ingredient_id ON inventory_transactions (IngredientID);
-
+-- search indexes for full text search
+CREATE INDEX idx_menu_item_search_id on menu_items using gin(to_tsvector('english' ,name || ' ' || COALESCE(description, '')));
 
 -- Функция для логирования изменения цены в price_history
 CREATE OR REPLACE FUNCTION log_price_change()

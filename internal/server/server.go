@@ -16,17 +16,19 @@ func ServerLaunch(db *sql.DB, logger *slog.Logger) {
 	orderRepo := dal.NewOrderRepository(db)
 	menuRepo := dal.NewMenuRepository(db)
 	inventoryRepo := dal.NewInventoryRepository(db)
+	aggregationRepo := dal.NewReportRespository(db)
 
 	// Initialize services (Business Logic Layer)
 	orderService := service.NewOrderService(*orderRepo, *menuRepo, *inventoryRepo)
 	menuService := service.NewMenuService(*menuRepo, *inventoryRepo)
 	inventoryService := service.NewInventoryService(*inventoryRepo)
+	aggregationService := service.NewAggregationService(aggregationRepo)
 
 	// Initialize handlers (Presentation Layer)
 	orderHandler := handler.NewOrderHandler(orderService, menuService, logger)
 	menuHandler := handler.NewMenuHandler(menuService, logger)
 	inventoryHandler := handler.NewInventoryHandler(inventoryService, logger)
-	reportHandler := handler.NewAggregationHandler(orderService, logger)
+	reportHandler := handler.NewAggregationHandler(orderService, aggregationService, logger)
 
 	mux := http.NewServeMux()
 

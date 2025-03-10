@@ -230,10 +230,6 @@ func (s *OrderService) GetNumberOfItems(startDate, endDate string) (map[string]i
 	return s.orderRepo.GetNumberOfItems(start, end)
 }
 
-func (s *OrderService) SearchService(minPrice, maxPrice int, args []string, querySrting string) error {
-	return nil
-}
-
 func (s *OrderService) GetOrderedItemsByPeriod(period, month, year string) (map[string]interface{}, error) {
 	if period == "" {
 		return nil, fmt.Errorf("period is required")

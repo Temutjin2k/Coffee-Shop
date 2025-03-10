@@ -1,9 +1,9 @@
 {
 	"info": {
-		"_postman_id": "6d36bf06-1f25-4b34-aaa8-5e3b9d5e9bee",
+		"_postman_id": "fb642aba-6db4-4aff-aef2-30ba1cad75f8",
 		"name": "Frappuccino",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-		"_exporter_id": "38774679"
+		"_exporter_id": "34252729"
 	},
 	"item": [
 		{
@@ -16,7 +16,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"customer_name\": \"John Doe\",\n    \"items\": [\n        {\n            \"product_id\": \"espresso\",\n            \"quantity\": 2\n        }\n    ]\n}",
+							"raw": "{\n    \"customer_name\": \"Savva\",\n    \"items\": [\n        {\n            \"product_id\": \"1\",\n            \"quantity\": 2\n        },\n        {\n            \"product_id\": \"1\",\n            \"quantity\": 11\n        }\n    ]\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -44,7 +44,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n   \"orders\": [\n       {\n           \"customer_name\": \"Temuuuu\",\n           \"items\": [\n               {\n                   \"menu_item_id\": 1,\n                   \"quantity\": 2\n               },\n               {\n                   \"menu_item_id\": 3,\n                   \"quantity\": 1\n               }\n           ]\n       },\n       {\n           \"customer_name\": \"Maks\",\n           \"items\": [\n               {\n                   \"menu_item_id\": 2,\n                   \"quantity\": 1\n               }\n           ]\n       }\n   ]\n}",
+							"raw": "{\n   \"orders\": [\n       {\n           \"customer_name\": \"Alice\",\n           \"items\": [\n               {\n                   \"product_id\": 1,\n                   \"quantity\": 2\n               },\n               {\n                   \"product_id\": 3,\n                   \"quantity\": 1\n               }\n           ]\n       },\n       {\n           \"customer_name\": \"Bob\",\n           \"items\": [\n               {\n                   \"product_id\": 2,\n                   \"quantity\": 10\n               }\n           ]\n       },\n       {\n           \"customer_name\": \"Bob1\",\n           \"items\": [\n               {\n                   \"product_id\": 2,\n                   \"quantity\": 5\n               }\n           ]\n       }\n   ]\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -180,7 +180,7 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "http://localhost:8080/orders/numberOfOrderedItems?startDate=10.11.2024&endDate=11.11.2024",
+							"raw": "http://localhost:8080/orders/numberOfOrderedItems?startDate=2024-11-10&endDate=2024-11-11",
 							"protocol": "http",
 							"host": [
 								"localhost"
@@ -193,11 +193,11 @@
 							"query": [
 								{
 									"key": "startDate",
-									"value": "10.11.2024"
+									"value": "2024-11-10"
 								},
 								{
 									"key": "endDate",
-									"value": "11.11.2024"
+									"value": "2024-11-11"
 								}
 							]
 						}
@@ -560,7 +560,7 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "http://localhost:8080/orderedItemsByPeriod?period=day&month=January&year=2024",
+							"raw": "http://localhost:8080/orderedItemsByPeriod?period=day&month=January&year=2025",
 							"protocol": "http",
 							"host": [
 								"localhost"
@@ -580,7 +580,7 @@
 								},
 								{
 									"key": "year",
-									"value": "2024"
+									"value": "2025"
 								}
 							]
 						}
