@@ -3,23 +3,22 @@ package handler
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"log/slog"
 	"net/http"
 	"strconv"
-	"strings"
 
 	"hot-coffee/internal/ErrorHandler"
 	"hot-coffee/internal/service"
 )
 
 type AggregationHandler struct {
-	orderService *service.OrderService
-	logger       *slog.Logger
+	orderService       *service.OrderService
+	aggregationService service.AggregationService
+	logger             *slog.Logger
 }
 
-func NewAggregationHandler(orderService *service.OrderService, logger *slog.Logger) *AggregationHandler {
-	return &AggregationHandler{orderService: orderService, logger: logger}
+func NewAggregationHandler(orderService *service.OrderService, aggregationService service.AggregationService, logger *slog.Logger) *AggregationHandler {
+	return &AggregationHandler{orderService: orderService, aggregationService: aggregationService, logger: logger}
 }
 
 // Return all saled items as key and quantity as value in JSON
@@ -57,63 +56,63 @@ func (h *AggregationHandler) PopularItemsHandler(w http.ResponseWriter, r *http.
 }
 
 func (h *AggregationHandler) SearchHandler(w http.ResponseWriter, r *http.Request) {
-	querySrting := r.URL.Query().Get("q")
+	searchQuery := r.URL.Query().Get("q")
 	filter := r.URL.Query().Get("filter")
 	minPrice := r.URL.Query().Get("minPrice")
 	maxPrice := r.URL.Query().Get("maxPrice")
 
-	if querySrting == "" {
-		h.logger.Error("Search query string is required", "method", r.Method, "url", r.URL)
-		ErrorHandler.Error(w, "Search query string is required", http.StatusBadRequest)
-		return
-	}
-	log.Println(querySrting)
-
-	var args []string
-	if filter != "" {
-		args = strings.Split(filter, ",")
-	}
-	for _, v := range args {
-		if v != "orders" && v != "menu" && v != "inventory" && v != "all" {
-			h.logger.Error("Incorrect search arguments", "method", r.Method, "url", r.URL)
-			ErrorHandler.Error(w, "Incorrect search arguments", http.StatusBadRequest)
-			return
-		}
-	}
-	log.Println(filter)
 	var MinPrice int
+	var err error
 	if minPrice != "" {
-		MinPriceTemp, err := strconv.Atoi(minPrice)
+		MinPrice, err = strconv.Atoi(minPrice)
 		if err != nil {
 			h.logger.Error("Min Price should be number", "method", r.Method, "url", r.URL)
 			ErrorHandler.Error(w, "Min Price should be number", http.StatusBadRequest)
 			return
 		}
-		MinPrice = MinPriceTemp
+		if MinPrice < 0 {
+			h.logger.Error("Min Price should be positive", "method", r.Method, "url", r.URL)
+			ErrorHandler.Error(w, service.ErrPriceNotPositive.Error(), http.StatusBadRequest)
+			return
+		}
 	} else {
-		MinPrice = 0
+		MinPrice = -1
 	}
-	log.Println(MinPrice)
 
 	var MaxPrice int
 	if maxPrice != "" {
-		MaxPriceTemp, err := strconv.Atoi(maxPrice)
+		MaxPrice, err = strconv.Atoi(maxPrice)
 		if err != nil {
 			h.logger.Error("Max Price should be number", "method", r.Method, "url", r.URL)
 			ErrorHandler.Error(w, "Max Price should be number", http.StatusBadRequest)
 			return
 		}
-		MaxPrice = MaxPriceTemp
-	} else {
-		MaxPrice = 9999999
-	}
-	log.Println(MaxPrice)
 
-	err := h.orderService.SearchService(MinPrice, MaxPrice, args, querySrting)
+		if MaxPrice < 0 {
+			h.logger.Error("Max Price should be positive", "method", r.Method, "url", r.URL)
+			ErrorHandler.Error(w, service.ErrPriceNotPositive.Error(), http.StatusBadRequest)
+			return
+		}
+	} else {
+		MaxPrice = -1
+	}
+
+	searchResult, err := h.aggregationService.Search(searchQuery, MinPrice, MaxPrice, filter)
 	if err != nil {
-		h.logger.Error(err.Error(), "method", r.Method, "url", r.URL)
-		ErrorHandler.Error(w, "Cannot searched", http.StatusInternalServerError)
+		h.logger.Error("Error searching", "method", r.Method, "url", r.URL, "err", err.Error())
+		if err == service.ErrSearchRequired || err == service.ErrWrongFilterOptions || err == service.ErrPriceNotPositive {
+			ErrorHandler.Error(w, err.Error(), http.StatusBadRequest)
+		} else {
+			ErrorHandler.Error(w, fmt.Sprintf("Error searching %v string", searchQuery), http.StatusInternalServerError)
+			return
+		}
 		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err = json.NewEncoder(w).Encode(searchResult); err != nil {
+		h.logger.Error("Could not encode json data", "error", err, "method", r.Method, "url", r.URL)
+		ErrorHandler.Error(w, "Could not encode request json data", http.StatusInternalServerError)
 	}
 }
 
