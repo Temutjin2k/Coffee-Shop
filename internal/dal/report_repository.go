@@ -10,6 +10,7 @@ import (
 )
 
 type ReportRespository interface {
+	GetPopularMenuItems() ([]models.PopularItem, error)
 	SearchOrders(searchQuery string) ([]models.SearchOrderResult, error)
 	SearchMenuItems(searchQuery string, minPrice, maxPrice int) ([]models.SearchMenuItem, error)
 }
@@ -20,6 +21,32 @@ type ReportRespositoryImpl struct {
 
 func NewReportRespository(db *sql.DB) *ReportRespositoryImpl {
 	return &ReportRespositoryImpl{db: db}
+}
+
+func (repo *ReportRespositoryImpl) GetPopularMenuItems() ([]models.PopularItem, error) {
+	query := `
+		SELECT oi.productid, mi.name, mi.description, SUM(quantity) as total 
+		FROM order_items oi
+		JOIN menu_items mi on oi.productid = mi.ID
+		GROUP BY oi.productid, mi.name, mi.description
+		ORDER BY total DESC
+	`
+	rows, err := repo.db.Query(query)
+	if err != nil {
+		return []models.PopularItem{}, fmt.Errorf("error getting popular items %v", err)
+	}
+	defer rows.Close()
+
+	var result []models.PopularItem
+	for rows.Next() {
+		var item models.PopularItem
+		if err := rows.Scan(&item.ProductID, &item.Name, &item.Description, &item.Quantity); err != nil {
+			return nil, err
+		}
+		result = append(result, item)
+	}
+
+	return result, nil
 }
 
 func (repo *ReportRespositoryImpl) SearchOrders(searchQuery string) ([]models.SearchOrderResult, error) {
@@ -45,6 +72,7 @@ func (repo *ReportRespositoryImpl) SearchOrders(searchQuery string) ([]models.Se
 	if err != nil {
 		return nil, fmt.Errorf("error searching %v in orders: %v", searchQuery, err)
 	}
+	defer rows.Close()
 
 	var result []models.SearchOrderResult
 	for rows.Next() {

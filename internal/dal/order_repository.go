@@ -2,7 +2,7 @@ package dal
 
 import (
 	"database/sql"
-	"errors"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -14,7 +14,6 @@ type OrderRepository struct {
 	db *sql.DB
 }
 
-// NewOrderRepository creates a new FileOrderRepository
 func NewOrderRepository(db *sql.DB) *OrderRepository {
 	return &OrderRepository{db: db}
 }
@@ -24,7 +23,6 @@ func (repo *OrderRepository) Add(order models.Order) (models.BatchOrderInfo, []m
 		CustomerName: order.CustomerName,
 		Status:       models.StatusOrderRejected,
 	}
-
 	tx, err := repo.db.Begin()
 	if err != nil {
 		processInfo.Reason = "internal server error. Failed to start transaction."
@@ -39,12 +37,19 @@ func (repo *OrderRepository) Add(order models.Order) (models.BatchOrderInfo, []m
 
 	// Inserting order and getting ID
 	queryOrder := `
-        INSERT INTO orders (CustomerName)
-        VALUES ($1)
+        INSERT INTO orders (CustomerName, Notes)
+        VALUES ($1, $2)
         RETURNING ID
     `
+
+	notesJSON, err := json.Marshal(order.Notes)
+	if err != nil {
+		processInfo.Reason = "Notes field in invalid format. Must be json"
+		return processInfo, []models.BatchOrderInventoryUpdate{}, fmt.Errorf("failed to marshal notes: %w", err)
+	}
+
 	var ID int
-	err = tx.QueryRow(queryOrder, order.CustomerName).Scan(&ID)
+	err = tx.QueryRow(queryOrder, order.CustomerName, notesJSON).Scan(&ID)
 	if err != nil {
 		processInfo.Reason = "internal server error. Failed to scan ID"
 		return processInfo, []models.BatchOrderInventoryUpdate{}, err
@@ -92,7 +97,6 @@ func (repo *OrderRepository) Add(order models.Order) (models.BatchOrderInfo, []m
 		}
 		processInfo.Total += float64(v.Quantity) * price
 
-		// Загружаем все ингредиенты перед обработкой
 		var ingredients []struct {
 			IngredientID     int
 			RequiredQuantity int
@@ -118,9 +122,6 @@ func (repo *OrderRepository) Add(order models.Order) (models.BatchOrderInfo, []m
 			}
 			ingredients = append(ingredients, ingredient)
 		}
-
-		fmt.Println("r9")
-		// Проверяем и обновляем инвентарь
 		for _, ing := range ingredients {
 			totalRequired := ing.RequiredQuantity * v.Quantity
 
@@ -140,8 +141,6 @@ func (repo *OrderRepository) Add(order models.Order) (models.BatchOrderInfo, []m
 				return processInfo, []models.BatchOrderInventoryUpdate{}, fmt.Errorf(processInfo.Reason)
 			}
 
-			// Обновляем инвентарь
-			fmt.Println(queryUpdateInventory, totalRequired, ing.IngredientID)
 			_, err = tx.Exec(queryUpdateInventory, totalRequired, ing.IngredientID)
 			if err != nil {
 				processInfo.Reason = "internal server error. Failed to update inventory."
@@ -159,7 +158,6 @@ func (repo *OrderRepository) Add(order models.Order) (models.BatchOrderInfo, []m
 		}
 	}
 
-	fmt.Println("r10")
 	// Commiting transaction
 	err = tx.Commit()
 	if err != nil {
@@ -174,7 +172,7 @@ func (repo *OrderRepository) Add(order models.Order) (models.BatchOrderInfo, []m
 
 func (repo *OrderRepository) GetAll() ([]models.Order, error) {
 	query := `
-	 SELECT ID, CustomerName, Status, CreatedAt
+	 SELECT ID, CustomerName, Status, Notes, CreatedAt
 	 FROM orders`
 
 	rows, err := repo.db.Query(query)
@@ -187,11 +185,14 @@ func (repo *OrderRepository) GetAll() ([]models.Order, error) {
 
 	for rows.Next() {
 		var order models.Order
-		if err := rows.Scan(&order.ID, &order.CustomerName, &order.Status, &order.CreatedAt); err != nil {
+		var notes []byte
+		if err := rows.Scan(&order.ID, &order.CustomerName, &order.Status, &notes, &order.CreatedAt); err != nil {
 			return nil, err
 		}
 
-		// Получение элементов заказа
+		// Scaning notes
+		json.Unmarshal(notes, &order.Notes)
+
 		items, err := getOrderItems(repo.db, order.ID)
 		if err != nil {
 			return nil, err
@@ -204,6 +205,36 @@ func (repo *OrderRepository) GetAll() ([]models.Order, error) {
 	return orders, nil
 }
 
+func (repo *OrderRepository) GetOrderByID(id int) (models.Order, error) {
+	query := `
+		SELECT ID, CustomerName, Status, Notes, CreatedAt
+		FROM orders WHERE ID = $1`
+
+	var order models.Order
+	var notes []byte
+	err := repo.db.QueryRow(query, id).Scan(&order.ID, &order.CustomerName, &order.Status, &notes, &order.CreatedAt)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return models.Order{}, models.ErrOrderNotFound
+		}
+		return models.Order{}, err
+	}
+
+	// Scaning notes
+	json.Unmarshal(notes, &order.Notes)
+
+	// getting menu_items
+	items, err := getOrderItems(repo.db, id)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return models.Order{}, models.ErrOrderNotFound
+		}
+		return models.Order{}, err
+	}
+	order.Items = items
+	return order, nil
+}
+
 func (repo *OrderRepository) SaveUpdatedOrder(updatedOrder models.Order, OrderID string) error {
 	queryCheckStatus := `
 	select Status from orders where ID = $1
@@ -213,13 +244,13 @@ func (repo *OrderRepository) SaveUpdatedOrder(updatedOrder models.Order, OrderID
 	err := repo.db.QueryRow(queryCheckStatus, OrderID).Scan(&Status)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return errors.New("no order found with the given ID")
+			return models.ErrOrderNotFound
 		}
-		return err // Return any other error
+		return err
 	}
 
 	if Status == "closed" {
-		return errors.New("the requested order is already closed")
+		return models.ErrOrderClosed
 	}
 	queryUpdateOrder := `
 	update orders 

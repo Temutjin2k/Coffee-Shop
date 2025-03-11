@@ -14,6 +14,7 @@ var (
 )
 
 type AggregationService interface {
+	GetPopularMenuItems() (models.PopularItems, error)
 	Search(searchQuery string, minPrice, maxPrice int, filter string) (models.SearchResult, error)
 }
 
@@ -23,6 +24,14 @@ type AggregationServiceImpl struct {
 
 func NewAggregationService(searchRepo dal.ReportRespository) *AggregationServiceImpl {
 	return &AggregationServiceImpl{searchRepo: searchRepo}
+}
+
+func (s *AggregationServiceImpl) GetPopularMenuItems() (models.PopularItems, error) {
+	popItms, err := s.searchRepo.GetPopularMenuItems()
+	res := models.PopularItems{
+		Items: popItms,
+	}
+	return res, err
 }
 
 func (s *AggregationServiceImpl) Search(searchQuery string, minPrice, maxPrice int, filter string) (models.SearchResult, error) {

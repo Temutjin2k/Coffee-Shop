@@ -5,7 +5,14 @@ type TotalSales struct {
 }
 
 type PopularItems struct {
-	Items []OrderItem `json:"popular_items"`
+	Items []PopularItem `json:"popular_items"`
+}
+
+type PopularItem struct {
+	ProductID   int    `json:"product_id"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Quantity    int    `json:"quantity"`
 }
 
 type SearchResult struct {
