@@ -95,7 +95,8 @@ CREATE INDEX idx_menu_item_ingredients_menu_id ON menu_item_ingredients (MenuID)
 CREATE INDEX idx_menu_item_ingredients_ingredient_id ON menu_item_ingredients (IngredientID);
 
 -- search indexes for full text search
-CREATE INDEX idx_menu_item_search_id on menu_items using gin(to_tsvector('english' ,name || ' ' || COALESCE(description, '')));
+CREATE INDEX idx_menu_item_search_id on menu_items using gin(to_tsvector('english' , name || ' ' || COALESCE(description, '')));
+
 
 -- Функция для логирования изменения цены в price_history
 CREATE OR REPLACE FUNCTION log_price_change()
@@ -242,7 +243,7 @@ INSERT INTO menu_item_ingredients (MenuID, IngredientID, Quantity) VALUES
 --2024
 INSERT INTO orders (CustomerName, Status, Notes, CreatedAt) VALUES
 ('tkoszhan', 'open', '{"notes": "No sugar, extra hot"}', '2024-12-01 08:45:00'),
-('malmpamys', 'open', '{"notes": "Double espresso"}', '2024-12-02 09:30:00'),
+('malpamys', 'open', '{"notes": "Double espresso"}', '2024-12-02 09:30:00'),
 ('brakhimb', 'open', '{"notes": "Extra chocolate syrup"}', '2024-12-03 10:00:00'),
 ('igussak', 'open', '{"notes": "No foam, extra strong"}', '2024-12-05 11:00:00'),
 ('nkali', 'open', '{"notes": "Add whipped cream"}', '2024-12-06 12:00:00'),
@@ -250,7 +251,7 @@ INSERT INTO orders (CustomerName, Status, Notes, CreatedAt) VALUES
 ('bsagat', 'open', '{"notes": "Less sugar, extra vanilla syrup"}', '2024-12-10 14:45:00'),
 ('ashpring', 'open', '{"notes": "More coffee, less ice"}', '2024-12-12 16:00:00'),
 ('ilim', 'open', '{"notes": "Cinnamon topping"}', '2024-12-15 17:30:00'),
-('akakimbe', 'open', '{"notes": "Extra shot of espresso"}', '2024-12-17 18:00:00');
+('akakimbe', 'open', '{"notes": "Extra traktor"}', '2024-12-17 18:00:00');
 
 -- 2025
 INSERT INTO orders (CustomerName, Status, Notes, CreatedAt) VALUES

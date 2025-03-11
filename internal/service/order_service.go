@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -131,22 +130,7 @@ func (s *OrderService) GetAllOrders() ([]models.Order, error) {
 }
 
 func (s *OrderService) GetOrder(OrderID int) (models.Order, error) {
-	flag := false
-	AllOrders, err := s.orderRepo.GetAll()
-	if err != nil {
-		return models.Order{}, err
-	}
-	var NeededOrder models.Order
-	for i, Order := range AllOrders {
-		if Order.ID == OrderID {
-			flag = true
-			NeededOrder = AllOrders[i]
-		}
-	}
-	if flag {
-		return NeededOrder, nil
-	}
-	return models.Order{}, errors.New("the order with given ID soes not exist")
+	return s.orderRepo.GetOrderByID(OrderID)
 }
 
 // UpdateOrder updates an existing order
@@ -172,40 +156,6 @@ func (s *OrderService) GetTotalSales() (models.TotalSales, error) {
 		}
 	}
 	return totalSales, nil
-}
-
-// Returns Popular Items sorted in decreasing order. Number of returned items depends on passing value(popularItemsNum)
-func (s *OrderService) GetPopularItems(popularItemsNum int) (models.PopularItems, error) {
-	existingOrders, err := s.orderRepo.GetAll()
-	if err != nil {
-		return models.PopularItems{}, err
-	}
-
-	// Should return sorted decreasing array
-	itemMap := make(map[int]int)
-	for _, order := range existingOrders {
-		for _, item := range order.Items {
-			itemMap[item.ProductID] += item.Quantity
-		}
-	}
-
-	sortedItems := make([]models.OrderItem, 0, len(itemMap))
-	for productID, quantity := range itemMap {
-		sortedItems = append(sortedItems, models.OrderItem{ProductID: productID, Quantity: quantity})
-	}
-
-	// Sorting in decresing order
-	sort.Slice(sortedItems, func(i, j int) bool {
-		return sortedItems[i].Quantity > sortedItems[j].Quantity
-	})
-
-	// To prevent from out of range
-	if popularItemsNum > len(sortedItems) {
-		popularItemsNum = len(sortedItems)
-	}
-
-	popularItems := models.PopularItems{Items: sortedItems[:popularItemsNum]} // potential out of range
-	return popularItems, nil
 }
 
 func (s *OrderService) DeleteOrderByID(OrderID int) error {

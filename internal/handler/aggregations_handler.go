@@ -42,10 +42,10 @@ func (h *AggregationHandler) TotalSalesHandler(w http.ResponseWriter, r *http.Re
 
 // Returns Each item as key and quatity as value
 func (h *AggregationHandler) PopularItemsHandler(w http.ResponseWriter, r *http.Request) {
-	popularItems, err := h.orderService.GetPopularItems(3)
+	popularItems, err := h.aggregationService.GetPopularMenuItems()
 	if err != nil {
-		h.logger.Error("Error in orderService GetPopularItems", "error", err, "method", r.Method, "url", r.URL)
-		ErrorHandler.Error(w, "Error getting data", http.StatusInternalServerError)
+		h.logger.Error("Error getting popular items", "error", err, "method", r.Method, "url", r.URL)
+		ErrorHandler.Error(w, "Error getting popular items", http.StatusInternalServerError)
 		return
 	}
 
