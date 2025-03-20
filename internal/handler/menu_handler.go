@@ -11,11 +11,11 @@ import (
 )
 
 type MenuHandler struct {
-	menuService *service.MenuService
+	menuService service.IMenuService
 	logger      *slog.Logger
 }
 
-func NewMenuHandler(menuService *service.MenuService, logger *slog.Logger) *MenuHandler {
+func NewMenuHandler(menuService service.IMenuService, logger *slog.Logger) *MenuHandler {
 	return &MenuHandler{menuService: menuService, logger: logger}
 }
 

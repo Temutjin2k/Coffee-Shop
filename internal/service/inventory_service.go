@@ -8,11 +8,21 @@ import (
 	"hot-coffee/models"
 )
 
-type InventoryService struct {
-	inventoryRepo dal.InventoryRepository
+type IInventoryService interface {
+	AddInventoryItem(item models.InventoryItem) error
+	GetAllInventoryItems() ([]models.InventoryItem, error)
+	GetItem(id int) (models.InventoryItem, error)
+	UpdateItem(id int, newItem models.InventoryItem) error
+	DeleteItem(id int) error
+	Exists(id int) bool
+	GetLeftOvers(sortBy, page, pageSize string) (map[string]any, error)
 }
 
-func NewInventoryService(inventoryRepo dal.InventoryRepository) *InventoryService {
+type InventoryService struct {
+	inventoryRepo dal.IInventoryRepository
+}
+
+func NewInventoryService(inventoryRepo dal.IInventoryRepository) *InventoryService {
 	return &InventoryService{inventoryRepo: inventoryRepo}
 }
 

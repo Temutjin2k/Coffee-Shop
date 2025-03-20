@@ -5,6 +5,15 @@ import (
 	"hot-coffee/models"
 )
 
+type IMenuRepository interface {
+	GetAll() ([]models.MenuItem, error)
+	Exists(itemID int) bool
+	DeleteMenuItemRepo(MenuItemID int) error
+	UpdateMenuItemRepo(menuItem models.MenuItem) error
+	AddMenuItemRepo(menuItem models.MenuItem) error
+	MenuCheckByIDRepo(ID int) bool
+}
+
 // MenuRepository implements MenuRepository using JSON files
 type MenuRepository struct {
 	db *sql.DB

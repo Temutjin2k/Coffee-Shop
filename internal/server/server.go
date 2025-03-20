@@ -19,9 +19,9 @@ func ServerLaunch(db *sql.DB, logger *slog.Logger) {
 	aggregationRepo := dal.NewReportRespository(db)
 
 	// Initialize services (Business Logic Layer)
-	orderService := service.NewOrderService(*orderRepo, *menuRepo, *inventoryRepo)
-	menuService := service.NewMenuService(*menuRepo, *inventoryRepo)
-	inventoryService := service.NewInventoryService(*inventoryRepo)
+	orderService := service.NewOrderService(orderRepo, menuRepo, inventoryRepo)
+	menuService := service.NewMenuService(menuRepo, inventoryRepo)
+	inventoryService := service.NewInventoryService(inventoryRepo)
 	aggregationService := service.NewAggregationService(aggregationRepo)
 
 	// Initialize handlers (Presentation Layer)

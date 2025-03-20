@@ -12,13 +12,26 @@ import (
 	"hot-coffee/models"
 )
 
-type OrderService struct {
-	orderRepo     dal.OrderRepository
-	menuRepo      dal.MenuRepository
-	inventoryRepo dal.InventoryRepository
+type IOrderService interface {
+	AddOrder(order models.Order) (models.BatchOrderInfo, []models.BatchOrderInventoryUpdate, error)
+	BulkOrders(orders []models.Order) (models.BatchOrdersResponce, error)
+	GetAllOrders() ([]models.Order, error)
+	GetOrder(OrderID int) (models.Order, error)
+	UpdateOrder(updatedOrder models.Order, OrderID string) error
+	GetTotalSales() (models.TotalSales, error)
+	DeleteOrderByID(OrderID int) error
+	CloseOrder(OrderID int) error
+	GetNumberOfItems(startDate, endDate string) (map[string]int, error)
+	GetOrderedItemsByPeriod(period, month, year string) (map[string]interface{}, error)
 }
 
-func NewOrderService(orderRepo dal.OrderRepository, menuRepo dal.MenuRepository, inventoryRepo dal.InventoryRepository) *OrderService {
+type OrderService struct {
+	orderRepo     dal.IOrderRepository
+	menuRepo      dal.IMenuRepository
+	inventoryRepo dal.IInventoryRepository
+}
+
+func NewOrderService(orderRepo dal.IOrderRepository, menuRepo dal.IMenuRepository, inventoryRepo dal.IInventoryRepository) *OrderService {
 	return &OrderService{
 		orderRepo:     orderRepo,
 		menuRepo:      menuRepo,
@@ -40,37 +53,6 @@ func (s *OrderService) AddOrder(order models.Order) (models.BatchOrderInfo, []mo
 
 	return s.orderRepo.Add(order)
 }
-
-//	{
-//	    "processed_orders": [
-//	        {
-//	            "order_id": 123,
-//	            "customer_name": "Alice",
-//	            "status": "accepted",
-//	            "total": 15.50
-//	        },
-//	        {
-//	            "order_id": 124,
-//	            "customer_name": "Bob",
-//	            "status": "rejected",
-//	            "reason": "insufficient_inventory"
-//	        }
-//	    ],
-//	    "summary": {
-//	        "total_orders": 2,
-//	        "accepted": 1,
-//	        "rejected": 1,
-//	        "total_revenue": 15.50,
-//	        "inventory_updates": [
-//	            {
-//	                "ingredient_id": 1,
-//	                "name": "Coffee Beans",
-//	                "quantity_used": 100,
-//	                "remaining": 2400
-//	            }
-//	        ]
-//	    }
-//	}
 
 func (s *OrderService) BulkOrders(orders []models.Order) (models.BatchOrdersResponce, error) {
 	proccesedOrdersInfo := []models.BatchOrderInfo{}

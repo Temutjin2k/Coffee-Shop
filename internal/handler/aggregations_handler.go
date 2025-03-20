@@ -12,12 +12,12 @@ import (
 )
 
 type AggregationHandler struct {
-	orderService       *service.OrderService
+	orderService       service.IOrderService
 	aggregationService service.AggregationService
 	logger             *slog.Logger
 }
 
-func NewAggregationHandler(orderService *service.OrderService, aggregationService service.AggregationService, logger *slog.Logger) *AggregationHandler {
+func NewAggregationHandler(orderService service.IOrderService, aggregationService service.AggregationService, logger *slog.Logger) *AggregationHandler {
 	return &AggregationHandler{orderService: orderService, aggregationService: aggregationService, logger: logger}
 }
 

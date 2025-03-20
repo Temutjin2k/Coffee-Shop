@@ -7,12 +7,25 @@ import (
 	"strings"
 )
 
-type MenuService struct {
-	menuRepo      dal.MenuRepository
-	inventoryRepo dal.InventoryRepository
+type IMenuService interface {
+	AddMenuItem(menuItem models.MenuItem) error
+	GetMenuItem(MenuItemID int) (models.MenuItem, error)
+	GetMenuItems() ([]models.MenuItem, error)
+	CheckNewMenu(MenuItem models.MenuItem) error
+	DeleteMenuItem(MenuItemID int) error
+	UpdateMenuItem(menuItem models.MenuItem) error
+	MenuCheckByID(MenuItemID int, isDelete bool) error
+	IngredientsCheckByID(menuItemID int, quantity int) error
+	IngredientsCheckForNewItem(menuItem models.MenuItem) error
+	SubtractIngredientsByID(OrderID int, quantity int) error
 }
 
-func NewMenuService(menuRepo dal.MenuRepository, inventoryRepo dal.InventoryRepository) *MenuService {
+type MenuService struct {
+	menuRepo      dal.IMenuRepository
+	inventoryRepo dal.IInventoryRepository
+}
+
+func NewMenuService(menuRepo dal.IMenuRepository, inventoryRepo dal.IInventoryRepository) *MenuService {
 	return &MenuService{menuRepo: menuRepo, inventoryRepo: inventoryRepo}
 }
 

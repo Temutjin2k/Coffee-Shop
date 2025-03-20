@@ -13,11 +13,11 @@ import (
 )
 
 type InventoryHandler struct {
-	inventoryService *service.InventoryService
+	inventoryService service.IInventoryService
 	logger           *slog.Logger
 }
 
-func NewInventoryHandler(inventoryService *service.InventoryService, logger *slog.Logger) *InventoryHandler {
+func NewInventoryHandler(inventoryService service.IInventoryService, logger *slog.Logger) *InventoryHandler {
 	return &InventoryHandler{inventoryService: inventoryService, logger: logger}
 }
 

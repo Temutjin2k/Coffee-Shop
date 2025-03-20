@@ -9,6 +9,16 @@ import (
 	"hot-coffee/models"
 )
 
+type IInventoryRepository interface {
+	GetAll() ([]models.InventoryItem, error)
+	Exists(ID int) bool
+	SubtractIngredients(ingredients map[int]float64) error
+	AddInventoryItemRepo(item models.InventoryItem) error
+	UpdateItemRepo(id int, newItem models.InventoryItem) error
+	DeleteItemRepo(id int) error
+	GetLeftOvers(sortBy, page, pageSize string) (map[string]any, error)
+}
+
 type InventoryRepository struct {
 	db *sql.DB
 }

@@ -14,13 +14,13 @@ import (
 )
 
 type OrderHandler struct {
-	orderService *service.OrderService
-	menuService  *service.MenuService
+	orderService service.IOrderService
+	menuService  service.IMenuService
 	logger       *slog.Logger
 }
 
 // NewOrderHandler creates a new OrderHandler
-func NewOrderHandler(orderService *service.OrderService, menuService *service.MenuService, logger *slog.Logger) *OrderHandler {
+func NewOrderHandler(orderService service.IOrderService, menuService service.IMenuService, logger *slog.Logger) *OrderHandler {
 	return &OrderHandler{orderService: orderService, menuService: menuService, logger: logger}
 }
 

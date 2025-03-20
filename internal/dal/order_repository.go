@@ -10,6 +10,18 @@ import (
 	"hot-coffee/models"
 )
 
+type IOrderRepository interface {
+	Add(order models.Order) (models.BatchOrderInfo, []models.BatchOrderInventoryUpdate, error)
+	GetAll() ([]models.Order, error)
+	GetOrderByID(id int) (models.Order, error)
+	SaveUpdatedOrder(updatedOrder models.Order, OrderID string) error
+	DeleteOrder(OrderID int) error
+	CloseOrderRepo(id int) error
+	GetNumberOfItems(startDate, endDate time.Time) (map[string]int, error)
+	OrderedItemsByDay(month, year int) (map[string]interface{}, error)
+	OrderedItemsByMonth(year int) (map[string]interface{}, error)
+}
+
 type OrderRepository struct {
 	db *sql.DB
 }
@@ -423,16 +435,6 @@ func (repo *OrderRepository) GetNumberOfItems(startDate, endDate time.Time) (map
 	}
 
 	return result, nil
-}
-
-func (repo *OrderRepository) GetEarliestDate() string {
-	query := `
-	SELECT min(CreatedAt) FROM orders
-	`
-	row, _ := repo.db.Query(query)
-	var Date string
-	row.Scan(&Date)
-	return Date
 }
 
 // Returns the number of orders for the specified period, grouped by day within a month.
